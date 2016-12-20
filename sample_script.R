@@ -4,7 +4,8 @@ library(xgboost)
 set.seed(1)
 
 cat("reading the train and test data\n")
-train <- read_csv("../input/train.csv")
+setwd("~/AML")
+train <- read_csv("springleaf_train.csv")
 test  <- read_csv("../input/test.csv")
 
 feature.names <- names(train)[2:ncol(train)-1]

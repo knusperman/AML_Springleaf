@@ -1,4 +1,4 @@
-row_count = countLines("../input/train.csv") 
+row_count = countLines("../AML/input/train.csv") 
 cat("Row count : ", row_count[1], "; Predictor column count : ", ncol(train))
 
 #proportion of NA vals
