@@ -1,12 +1,18 @@
-trainData = read.csv("train.csv", stringsAsFactors = FALSE, strip.white = TRUE)
+if (!"ggplot2" %in% installed.packages()) install.packages("ggplot2")
+require(ggplot2)
 
+trainData = read.csv("data/train.csv", stringsAsFactors = FALSE, strip.white = TRUE)
+ncol(trainData) # initially 1934 columns
+
+source("source/ConvertNAs.R")
 trainData = convertObviousNAs(trainData)
 # remove ID column and target column
 target = trainData[, ncol(trainData)]
 trainData = trainData[,-c(1, ncol(trainData))]
 
 # perform some initial manual analysis of data
-oneFactor = as.vector(which(sapply(apply(trainData, 2, unique), length) == 1)) #5 occurrences
+oneFactor = as.vector(which(sapply(apply(trainData, 2, unique), length) == 1)) #8 occurrences
+# 6 NAs, 1 0, 1 1
 twoFactors = as.vector(which(sapply(apply(trainData, 2, unique), length) == 2)) #66 occurrences
 threeFactors = as.vector(which(sapply(apply(trainData, 2, unique), length) == 3)) #36 occurrences
 fourFactors = as.vector(which(sapply(apply(trainData, 2, unique), length) == 4)) #65 occurrences
@@ -20,14 +26,6 @@ moreThanTenFactors = as.vector(which(sapply(apply(trainData, 2, unique), length)
 
 # remove columns with only one factor (they are basically useless)
 trainData = trainData[,-oneFactor]
-
-# handle date variables differently
-dateVariables = as.vector(which(apply(trainData, 2, function(x) {
-  sum(grepl("JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC", x)) > 0
-})))
-dateSet = trainData[, dateVariables]
-# 15, 18, 19 actually not date but Strings
-dateSet = dateSet[, -c(15, 18, 19)]
 
 # find duplicate attributes
 # this function does NOT check, whether one vector contains more information than the other
@@ -61,15 +59,8 @@ findDuplicateAttributes = function(data) {
 
 duplicateAttributes = findDuplicateAttributes(trainData[1:10000,]) #none
 
-write.csv2(trainData[1:1000,], "subset.csv")
-
 # check for duplicate rows
 nrow(trainData) - nrow(unique(trainData)) #0
-
-# find out number of NAs per row
-nasPerRow = apply(trainData, 1, function(x) {
-  sum(is.na(x))
-})
 
 #### for initial analysis, sample 10000 rows only to speed up the performance
 # do this after data cleaning, since for data cleaning the entire dataset should be used
@@ -79,7 +70,7 @@ sampleTraining = apply(trainData, 2, function(x) {
 })
 
 write.csv2(sampleTraining, "sample.csv")
-
+sampleTraining = read.csv2("sample.csv", stringsAsFactors = FALSE, strip.white = TRUE)
 
 # differentiate datatypes
 source("source/ConvertDatatypes.R")
@@ -95,10 +86,6 @@ stringData = sampleTraining[,stringColumns & !(booleanColumns | dateColumns)] #2
 numericalData = sampleTraining[,!(stringColumns | booleanColumns | dateColumns)] #1875
 numericalData = apply(numericalData, 2, as.numeric)
 
-# handle numericals differently that only contain one value and NAs
-oneValueAndNAColumns = findOneValueAndNAs(numericalData)
-oneValueAndNAData = numericalData[,oneValueAndNAColumns] #47
-
 # remove these from numerical data
 numericalData = numericalData[,!oneValueAndNAColumns]
 
@@ -107,24 +94,13 @@ numericalData = numericalData[,!oneValueAndNAColumns]
 # NA HANDLING
 #############################################
 # inspect data to find NA encodings
-source("source/ConvertNAs.R")
 initialNAs = getNAsPercentage(sampleTraining)
-pdf("fig/NA distribution.pdf")
-barplot(sort(initialNAs), main = "NA % of all attributes", ylab = "NAs in %")
-dev.off()
-
-pdf("fig/NA distribution_onlyNA.pdf")
-barplot(sort(initialNAs[!initialNAs == 0]), 
-        main = paste("NA % of", length(initialNAs[!initialNAs == 0]), "attributes with NA values"),  
-        ylab = "NAs in %")
-dev.off()
 
 # how many rows have only NA values
 sum(initialNAs == 1) #3
 # remove these
 trainData = trainData[,-which(initialNAs == 1)]
 sampleTraining = sampleTraining[,-which(initialNAs == 1)]
-
 
 # now go to more sophisticated NA conversion
 overview = inspectValues(numericalData)
@@ -136,7 +112,7 @@ naColumns = which(overview[5,] > (overview[6,]*10))
 # handle attributes with negative mean differently
 # negativeMean = overview[,which(overview[5,] < 0)]
 length(which(overview[,which(overview[5,] < 0)][5,] < (overview[,which(overview[5,] < 0)][6,]*10)))/length(overview[,which(overview[5,] < 0)]) # 0.9621212
-# almost all negative means columsn are likely to be due to negative NA encodings
+# almost all negative means columns are likely to be due to negative NA encodings
 # the columns not appearing there are due to NaN values when extrema are removed
 
 # drill down to find NA encodings
@@ -191,26 +167,173 @@ for (i in 1:length(naColumns)) {
 
 # likely candidates for NAs are therefore 999999999, 999999998, 999999997, 999999996, 999999995, 999999994
 naEncodings = c(naEncodings, 999999999, 999999998, 999999997, 999999996, 999999995, 999999994)
-numericalData = convertNAs(numericalData, naEncodings) 
-# 3785860 replacements out of 18750000 total entries -> 20.19%
+sampleTraining = convertNAs(sampleTraining, naEncodings)
+# 3785303 replacements out of 18260000 total entries -> 20.73%
 sum(is.na(numericalData))/(nrow(numericalData)*ncol(numericalData))
 # total NAs now: 22.34%
 
+# analyze NA distributions over columns
+naPerColumn = apply(sampleTraining, 2, function(x) sum(is.na(x))/length(x))
+naPerColumn = sort(naPerColumn)
+naPerColumn = as.data.frame(naPerColumn)
+naPerColumn = as.data.frame(cbind(Attributes = seq(1, nrow(naPerColumn), by = 1), naPerColumn))
+png("fig/NA_column.png", height = 800, width = 800)
+ggplot(data = naPerColumn, aes(x = Attributes, y = naPerColumn)) + 
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Percentage of NAs") + theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
+dev.off()
+# analyze NA distributions over rows
+naPerRow = apply(sampleTraining, 1, function(x) sum(is.na(x))/length(x))
+naPerRow = sort(naPerRow)
+naPerRow = as.data.frame(naPerRow)
+naPerRow = as.data.frame(cbind(Attributes = seq(1, nrow(naPerRow), by = 1), naPerRow))
+
+png("fig/NA_row.png", height = 800, width = 800)
+ggplot(data = naPerRow, aes(x = Attributes, y = naPerRow)) + 
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Percentage of NAs") + theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
+dev.off()
+
+numericalNAs = getNAsPercentage(numericalData)
+# handle numericals differently that only contain one value and NAs
+oneValueAndNAColumns = findOneValueAndNAs(numericalData)
+oneValueAndNAData = numericalData[,oneValueAndNAColumns] #48
+numericalData = numericalData[,!oneValueAndNAColumns]
+
+#############################################
+# END NA HANDLING
+#############################################
+# find out what a likely threshold for factors <-> numerical data might be
+uniqueNumericalValues = apply(numericalData, 2, function(x) {
+  length(unique(x))
+})
+uniqueNumericalValues = sort(uniqueNumericalValues)
+uniqueNumericalValues = as.data.frame(cbind(id = seq_along(uniqueNumericalValues), uniqueNumericalValues))
+png("fig/uniqueValues.png", height = 800, width = 800)
+ggplot(data = uniqueNumericalValues, aes(x = id, y = uniqueNumericalValues)) + 
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
+dev.off()
+
+# not much to see there, drill down to only attributes with 100 unique values or less
+uniqueNumericalValues100 = uniqueNumericalValues[uniqueNumericalValues[,2] < 101,]
+png("fig/uniqueValues_100.png", height = 800, width = 800)
+ggplot(data = uniqueNumericalValues100, aes(x = id, y = uniqueNumericalValues)) + 
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
+dev.off()
+
+# not much to see here either, look at variances of attribute values
+# reasoning: factor attribute values are likely to be close together
+# only consider less than 101 unique values, it is unlikely that there are more than 100 factors per attribute
+uniqueValuesVariances = apply(numericalData[,which(uniqueNumericalValues[,2] < 101)], 2, function(x) {
+  var(na.omit(unique(x)))
+})
+uniqueValuesVariances = sort(uniqueValuesVariances)
+uniqueValuesVariances = as.data.frame(cbind(id = seq_along(uniqueValuesVariances), uniqueValuesVariances))
+png("fig/uniqueValuesVariances_500.png", height = 800, width = 800)
+ggplot(data = uniqueValuesVariances[1:500,], aes(x = id, y = uniqueValuesVariances)) + 
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
+dev.off()
+
+# elbow somewhere between att 250 and 350 (sorted)
+png("fig/uniqueValuesVariances_250_350.png", height = 800, width = 800)
+ggplot(data = uniqueValuesVariances[250:350,], aes(x = id, y = uniqueValuesVariances)) + 
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
+dev.off()
+
+# find biggest gap
+gaps = abs(uniqueValuesVariances[250:349,2] - uniqueValuesVariances[251:350,2])
+which(gaps == max(gaps)) # 94
+# the biggest gap is between attribute 343 and 344
+
+# analyse the number of unique values for these
+factorPotentials = rownames(uniqueValuesVariances[1:343,])
+factorPotentials_uniqueNumericalValues = uniqueNumericalValues[rownames(uniqueNumericalValues) %in% factorPotentials,]
+factorPotentials_uniqueNumericalValues$id = seq_along(factorPotentials_uniqueNumericalValues$uniqueNumericalValues)
+png("fig/uniqueValuesVariances_factorPotentials.png", height = 800, width = 800)
+ggplot(data = factorPotentials_uniqueNumericalValues, aes(x = id, y = uniqueNumericalValues)) + 
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
+dev.off()
+# find biggest gap
+gaps = abs(factorPotentials_uniqueNumericalValues[1:342,2] - factorPotentials_uniqueNumericalValues[2:343,2])
+which(gaps == max(gaps)) # 333
+# the biggest gap is between attribute 333 and 334
+# we therefore conclude that attributes with less than or equal to 36 unique values are categorical if there variance is also low
+
+
+# plot these different attribute types
+waterfallData = data.frame(desc = c("Total attributes", 
+                                    "ID & target", "Only one value", "Boolean", "Dates",
+                                    "Strings", "Numerical", "Only 1 value and NA", "Probably categorical",
+                                    "Actual numerical"), 
+                           amount = c(1934, -2, -8, -13, -16, -21, -1874, -48, -333, -1793))
+waterfallData$id = seq_along(waterfallData$amount)
+waterfallData$cumsum = cumsum(waterfallData$amount)
+# do some ugly manual coding due to reset after "Numerical"
+waterfallData$cumsum[8:9] = waterfallData$cumsum[8:9] + 1874
+waterfallData$start = c(0, head(waterfallData$cumsum, -1))
+waterfallData$start[8:9] = c(1874, 1874-48)
+waterfallData$cumsum[10] = 0
+# drill down numerical data
+waterfallData$desc = factor(waterfallData$desc, levels = waterfallData$desc)
+
+png("fig/typesOfAttributes_waterfall.png", height = 800, width = 800)
+ggplot(waterfallData, aes(desc)) + 
+  scale_y_continuous(limits = c(0, 2000)) +
+  geom_rect(aes(x = desc, xmin = id - 0.45, xmax = id + 0.45, ymin = cumsum, ymax = start), fill = "black") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.45)) +
+  geom_text(aes(y = rep(2000, 10), label = abs(amount)), size = 10, colour = "black") +
+  xlab("") + ylab("Amount")
+dev.off()
+
+
+
 # create correlation heatmap
 correlations = cor(numericalData, use="pairwise.complete.obs")
-# inspect elements except for diagonal
-temp = correlations
-diag(temp) = NA
-temp = as.vector(temp)
-temp = na.omit(temp)
-temp = temp[seq(1, length(temp)-1, by = 2)]
 
-# plot extreme values
-barplot(c(sort(temp)[1:500], sort(temp)[(length(temp)-499):length(temp)]))
+# sort matrix according to highest correlations
+# first transform matrix into vector with indices (-> dataframe)
+# this does not seem to anything too useful...
+#corrVector = as.vector(correlations)
+#corrVector = as.data.frame(cbind(row = rep(1:sqrt(length(corrVector)), sqrt(length(corrVector))), 
+#                                 column = rep(1:sqrt(length(corrVector)), each = sqrt(length(corrVector))),
+#                                 values = corrVector))
+#remove diagonal values
+print("starting...")
+#printTimes = seq(nrow(corrVector)/10, nrow(corrVector), length.out = 10)
+#printTimes = floor(printTimes)
+#for (i in 1:nrow(corrVector)) {
+#  if (i %in% printTimes) print(paste(which(printTimes == i)*10, "% done"))
+#  if (corrVector[i,1] == corrVector[i,2]) corrVector[i,3] = -999
+#}
+#corrVector = corrVector[!corrVector[,3] == -999,]
+#corrVector = corrVector[order(corrVector$values, decreasing = TRUE),]
 
-# plot all values
-barplot(sort(temp))
-
+# remove every second (duplicates)
+#corrVector = corrVector[seq(1, nrow(corrVector) - 1, by = 2),]
+#sum(unique(corrVector[,1])[1:100] %in% unique(corrVector[,2])[1:100])
 
 if (!"ggplot2" %in% installed.packages()) install.packages("ggplot2")
 if (!"reshape2" %in% installed.packages()) install.packages("reshape2")
@@ -218,6 +341,34 @@ if (!"corrplot" %in% installed.packages()) install.packages("corrplot")
 library(ggplot2)
 library(reshape2)
 library(corrplot)
-pdf("corrplot.pdf")
-corrplot(correlations[1:100, 1:100], method = "color", tl.pos = "n")
+
+png("fig/corrplot.png")
+corrplot(correlations, method = "color", tl.pos = "n")
+dev.off()
+# not much to see, plot as barchart
+
+temp = correlations
+diag(temp) = NA
+correlationVector = as.vector(temp)
+correlationVector = sort(correlationVector)
+plotData = as.data.frame(cbind(id = seq(1, 2000, by = 1), 
+                               values = c(correlationVector[1:1000], 
+                                          correlationVector[(length(correlationVector)-999):length(correlationVector)])))
+plotDataAll = as.data.frame(cbind(id = seq_along(correlationVector), 
+                               values = correlationVector))
+
+png("fig/correlations_barplot.png", height = 800, width = 800)
+ggplot(data = plotData, aes(x = id, y = values)) + 
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
+dev.off()
+
+png("fig/correlations_barplot_all.png", height = 800, width = 800)
+ggplot(data = plotDataAll, aes(x = id, y = values)) + 
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
 dev.off()
