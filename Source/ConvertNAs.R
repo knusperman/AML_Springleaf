@@ -50,7 +50,7 @@ inspectValues = function(x) {
     column[4] = median(temp)
     uniqueTemp = unique(temp)
     column[5] = mean(uniqueTemp)
-    sortedUniqueTemp = sort(unique(temp))
+    sortedUniqueTemp = sort(uniqueTemp)
     column[10] = sortedUniqueTemp[2]
     column[11] = sortedUniqueTemp[(length(sortedUniqueTemp)-1)]
     temp = temp[!temp == min(temp)]
@@ -105,4 +105,12 @@ convertNAs = function(x, naEncodings) {
   }
   print(paste(replacements, "replacements done out of", ncol(x) * nrow(x), "total values"))
   return(x)
+}
+
+convertNAsFaster = function(x, naEncodings) {
+  a = apply(x, 2, function(x) {
+    x[which(x %in% naEncodings)] = NA
+    return(x)
+  })
+  return(a)
 }

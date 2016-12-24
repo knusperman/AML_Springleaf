@@ -1,5 +1,10 @@
 if (!"ggplot2" %in% installed.packages()) install.packages("ggplot2")
-require(ggplot2)
+if (!"reshape2" %in% installed.packages()) install.packages("reshape2")
+if (!"corrplot" %in% installed.packages()) install.packages("corrplot")
+library(ggplot2)
+library(reshape2)
+library(corrplot)
+
 
 trainData = read.csv("data/train.csv", stringsAsFactors = FALSE, strip.white = TRUE)
 ncol(trainData) # initially 1934 columns
@@ -83,11 +88,8 @@ dateData = sampleTraining[,dateColumns]
 stringColumns = findStrings(sampleTraining)
 stringData = sampleTraining[,stringColumns & !(booleanColumns | dateColumns)] #21
 
-numericalData = sampleTraining[,!(stringColumns | booleanColumns | dateColumns)] #1875
+numericalData = sampleTraining[,!(stringColumns | booleanColumns | dateColumns)] #1874
 numericalData = apply(numericalData, 2, as.numeric)
-
-# remove these from numerical data
-numericalData = numericalData[,!oneValueAndNAColumns]
 
 
 #############################################
@@ -95,14 +97,21 @@ numericalData = numericalData[,!oneValueAndNAColumns]
 #############################################
 # inspect data to find NA encodings
 initialNAs = getNAsPercentage(sampleTraining)
+# total initial NAs: 574300 (including NAs filtered above with the trivial encoding -1, [], <blank>)
+# percentage: 574300/19250000 = 0.02983377
 
 # how many rows have only NA values
-sum(initialNAs == 1) #3
+sum(initialNAs == 1) # 0
 # remove these
-trainData = trainData[,-which(initialNAs == 1)]
-sampleTraining = sampleTraining[,-which(initialNAs == 1)]
+# trainData = trainData[,-which(initialNAs == 1)]
+# sampleTraining = sampleTraining[,-which(initialNAs == 1)]
 
 # now go to more sophisticated NA conversion
+# handle numericals differently that only contain one value and NAs
+oneValueAndNAColumns = findOneValueAndNAs(numericalData)
+oneValueAndNAData = numericalData[,oneValueAndNAColumns] #48
+numericalData = numericalData[,!oneValueAndNAColumns]
+
 overview = inspectValues(numericalData)
 
 # check which mean of unique values differs drastically from the mean of unique means minus outliers
@@ -167,8 +176,14 @@ for (i in 1:length(naColumns)) {
 
 # likely candidates for NAs are therefore 999999999, 999999998, 999999997, 999999996, 999999995, 999999994
 naEncodings = c(naEncodings, 999999999, 999999998, 999999997, 999999996, 999999995, 999999994)
-sampleTraining = convertNAs(sampleTraining, naEncodings)
-# 3785303 replacements out of 18260000 total entries -> 20.73%
+
+# convert encodings into actual NAs and update numerical data accordingly
+sampleTraining = convertNAsFaster(sampleTraining, naEncodings)
+# 4308204 NAs now out of 19240000 total entries -> 0.2239191
+numericalData = convertNAsFaster(numericalData, naEncodings)
+
+# remove these from numerical data
+numericalData = numericalData[,!oneValueAndNAColumns]
 sum(is.na(numericalData))/(nrow(numericalData)*ncol(numericalData))
 # total NAs now: 22.34%
 
@@ -204,8 +219,13 @@ oneValueAndNAColumns = findOneValueAndNAs(numericalData)
 oneValueAndNAData = numericalData[,oneValueAndNAColumns] #48
 numericalData = numericalData[,!oneValueAndNAColumns]
 
+
 #############################################
 # END NA HANDLING
+#############################################
+
+#############################################
+# HANDLING OF DIFFERENT DATATYPES
 #############################################
 # find out what a likely threshold for factors <-> numerical data might be
 uniqueNumericalValues = apply(numericalData, 2, function(x) {
@@ -278,21 +298,32 @@ which(gaps == max(gaps)) # 333
 # the biggest gap is between attribute 333 and 334
 # we therefore conclude that attributes with less than or equal to 36 unique values are categorical if there variance is also low
 
+# some attributes only seem to have two distinct values
+unique(as.vector(numericalData[,which(apply(numericalData, 2, function(x) {length(unique(x))}) == 2)])) #0, 1
+
+# encode these as boolean
+booleanTemp = numericalData[,which(apply(numericalData, 2, function(x) {length(unique(x))}) == 2)] #11
+booleanTemp = convert01Booleans(booleanTemp)
+
+# append to boolean data
+booleanData = cbind(booleanData, booleanTemp) #24
+
+# remove from numerical data
+numericalData = numericalData[,-which(apply(numericalData, 2, function(x) {length(unique(x))}) == 2)]
 
 # plot these different attribute types
 waterfallData = data.frame(desc = c("Total attributes", 
                                     "ID & target", "Only one value", "Boolean", "Dates",
                                     "Strings", "Numerical", "Only 1 value and NA", "Probably categorical",
                                     "Actual numerical"), 
-                           amount = c(1934, -2, -8, -13, -16, -21, -1874, -48, -333, -1793))
+                           amount = c(1934, -2, -8, -24, -16, -21, -1863, -53, -333, -1488))
 waterfallData$id = seq_along(waterfallData$amount)
 waterfallData$cumsum = cumsum(waterfallData$amount)
 # do some ugly manual coding due to reset after "Numerical"
 waterfallData$cumsum[8:9] = waterfallData$cumsum[8:9] + 1874
 waterfallData$start = c(0, head(waterfallData$cumsum, -1))
-waterfallData$start[8:9] = c(1874, 1874-48)
+waterfallData$start[8:9] = c(1863, 1863-53)
 waterfallData$cumsum[10] = 0
-# drill down numerical data
 waterfallData$desc = factor(waterfallData$desc, levels = waterfallData$desc)
 
 png("fig/typesOfAttributes_waterfall.png", height = 800, width = 800)
@@ -308,10 +339,17 @@ ggplot(waterfallData, aes(desc)) +
   xlab("") + ylab("Amount")
 dev.off()
 
+#############################################
+# END ANALYSIS OF DIFFERENT ATTRIBUTE TYPES
+#############################################
 
+#############################################
+# CORRELATION ANALYSIS
+#############################################
 
 # create correlation heatmap
 correlations = cor(numericalData, use="pairwise.complete.obs")
+# produces NA values due to the elimination of values used by "pairwise.complete.obs" (but there is no viable alternative)
 
 # sort matrix according to highest correlations
 # first transform matrix into vector with indices (-> dataframe)
@@ -321,7 +359,7 @@ correlations = cor(numericalData, use="pairwise.complete.obs")
 #                                 column = rep(1:sqrt(length(corrVector)), each = sqrt(length(corrVector))),
 #                                 values = corrVector))
 #remove diagonal values
-print("starting...")
+#print("starting...")
 #printTimes = seq(nrow(corrVector)/10, nrow(corrVector), length.out = 10)
 #printTimes = floor(printTimes)
 #for (i in 1:nrow(corrVector)) {
@@ -335,15 +373,9 @@ print("starting...")
 #corrVector = corrVector[seq(1, nrow(corrVector) - 1, by = 2),]
 #sum(unique(corrVector[,1])[1:100] %in% unique(corrVector[,2])[1:100])
 
-if (!"ggplot2" %in% installed.packages()) install.packages("ggplot2")
-if (!"reshape2" %in% installed.packages()) install.packages("reshape2")
-if (!"corrplot" %in% installed.packages()) install.packages("corrplot")
-library(ggplot2)
-library(reshape2)
-library(corrplot)
 
 png("fig/corrplot.png")
-corrplot(correlations, method = "color", tl.pos = "n")
+corrplot(correlations, method = "color", tl.pos = "n", ylab = "", xlab = "")
 dev.off()
 # not much to see, plot as barchart
 
@@ -372,3 +404,41 @@ ggplot(data = plotDataAll, aes(x = id, y = values)) +
         axis.title = element_text(size = 40, colour = "black")) +
   theme(plot.margin = unit(c(1,2,1,1), "cm")) 
 dev.off()
+
+# try out spearman correlations
+correlationsSpearman = cor(numericalData, use="pairwise.complete.obs", method = "spearman")
+
+png("fig/corrplot_spearman.png")
+corrplot(correlationsSpearman, method = "color", tl.pos = "n")
+dev.off()
+# not much to see, plot as barchart
+
+temp = correlationsSpearman
+diag(temp) = NA
+correlationVector = as.vector(temp)
+correlationVector = sort(correlationVector)
+plotData = as.data.frame(cbind(id = seq(1, 2000, by = 1), 
+                               values = c(correlationVector[1:1000], 
+                                          correlationVector[(length(correlationVector)-999):length(correlationVector)])))
+plotDataAll = as.data.frame(cbind(id = seq_along(correlationVector), 
+                                  values = correlationVector))
+
+png("fig/correlations_barplot_spearman.png", height = 800, width = 800)
+ggplot(data = plotData, aes(x = id, y = values)) + 
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
+dev.off()
+
+png("fig/correlations_barplot_all_spearman.png", height = 800, width = 800)
+ggplot(data = plotDataAll, aes(x = id, y = values)) + 
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
+dev.off()
+
+#############################################
+# END CORRELATION ANALYSIS
+#############################################
