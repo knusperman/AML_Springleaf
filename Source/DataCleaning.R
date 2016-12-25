@@ -1,18 +1,22 @@
 if (!"ggplot2" %in% installed.packages()) install.packages("ggplot2")
 if (!"reshape2" %in% installed.packages()) install.packages("reshape2")
 if (!"corrplot" %in% installed.packages()) install.packages("corrplot")
+if (!"mice" %in% installed.packages()) install.packages("mice")
+if (!"randomForest" %in% installed.packages()) install.packages("randomForest")
 library(ggplot2)
 library(reshape2)
 library(corrplot)
+library(mice)
+library(randomForest)
 
-
-trainData = read.csv("data/train.csv", stringsAsFactors = FALSE, strip.white = TRUE)
+trainData = read.csv("train.csv", stringsAsFactors = FALSE, strip.white = TRUE)
 ncol(trainData) # initially 1934 columns
 
 source("source/ConvertNAs.R")
 trainData = convertObviousNAs(trainData)
-# remove ID column and target column
-target = trainData[, ncol(trainData)]
+
+
+# remove ID column
 trainData = trainData[,-c(1, ncol(trainData))]
 
 # perform some initial manual analysis of data
@@ -70,12 +74,17 @@ nrow(trainData) - nrow(unique(trainData)) #0
 #### for initial analysis, sample 10000 rows only to speed up the performance
 # do this after data cleaning, since for data cleaning the entire dataset should be used
 set.seed(123)
-sampleTraining = apply(trainData, 2, function(x) {
-  sample(x, 10000, replace = FALSE) 
-})
-
+sampleIndices = sample(1:nrow(trainData), 10000, replace = FALSE)
+sampleTraining = trainData[sampleIndices,]
 write.csv2(sampleTraining, "sample.csv")
-sampleTraining = read.csv2("sample.csv", stringsAsFactors = FALSE, strip.white = TRUE)
+
+# extract target
+sampleTarget = sampleTraining[,ncol(sampleTraining)]
+sampleTraining = sampleTraining[,-ncol(sampleTraining)]
+
+# write for backup
+write.csv2(sampleTraining, "sample.csv")
+# sampleTraining = read.csv2("sample.csv", stringsAsFactors = FALSE, strip.white = TRUE)
 
 # differentiate datatypes
 source("source/ConvertDatatypes.R")
@@ -207,7 +216,7 @@ naPerRow = as.data.frame(cbind(Attributes = seq(1, nrow(naPerRow), by = 1), naPe
 
 png("fig/NA_row.png", height = 800, width = 800)
 ggplot(data = naPerRow, aes(x = Attributes, y = naPerRow)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Percentage of NAs") + theme_bw() +
+  geom_bar(stat = "identity") + xlab("Observations") + ylab("Percentage of NAs") + theme_bw() +
   theme(axis.text = element_text(size = 40, colour = "black"), 
         axis.title = element_text(size = 40, colour = "black")) +
   theme(plot.margin = unit(c(1,2,1,1), "cm")) 
@@ -391,7 +400,7 @@ plotDataAll = as.data.frame(cbind(id = seq_along(correlationVector),
 
 png("fig/correlations_barplot.png", height = 800, width = 800)
 ggplot(data = plotData, aes(x = id, y = values)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Correlation") + theme_bw() +
   theme(axis.text = element_text(size = 40, colour = "black"), 
         axis.title = element_text(size = 40, colour = "black")) +
   theme(plot.margin = unit(c(1,2,1,1), "cm")) 
@@ -399,7 +408,7 @@ dev.off()
 
 png("fig/correlations_barplot_all.png", height = 800, width = 800)
 ggplot(data = plotDataAll, aes(x = id, y = values)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Correlation") + theme_bw() +
   theme(axis.text = element_text(size = 40, colour = "black"), 
         axis.title = element_text(size = 40, colour = "black")) +
   theme(plot.margin = unit(c(1,2,1,1), "cm")) 
@@ -425,7 +434,7 @@ plotDataAll = as.data.frame(cbind(id = seq_along(correlationVector),
 
 png("fig/correlations_barplot_spearman.png", height = 800, width = 800)
 ggplot(data = plotData, aes(x = id, y = values)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Correlation") + theme_bw() +
   theme(axis.text = element_text(size = 40, colour = "black"), 
         axis.title = element_text(size = 40, colour = "black")) +
   theme(plot.margin = unit(c(1,2,1,1), "cm")) 
@@ -433,12 +442,117 @@ dev.off()
 
 png("fig/correlations_barplot_all_spearman.png", height = 800, width = 800)
 ggplot(data = plotDataAll, aes(x = id, y = values)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Correlation") + theme_bw() +
   theme(axis.text = element_text(size = 40, colour = "black"), 
         axis.title = element_text(size = 40, colour = "black")) +
   theme(plot.margin = unit(c(1,2,1,1), "cm")) 
 dev.off()
 
+# spearman does reveal a couple of very high (and perfect) correlations
+# find out which attributes are highly correlated
+
+threshold = 1
+indices = as.data.frame(which(correlationsSpearman >= threshold, arr.ind = TRUE))
+rownames(indices) = NULL
+# obviously this includes correlations of variables with itself, eliminate those
+for (i in 1:nrow(indices)) {
+  if (indices[i,1] == indices[i,2]) {
+    indices[i,1] = NA
+    indices[i,2] = NA
+  }
+}
+indices = na.omit(indices)
+# 126 perfect correlations (includes both sides, so actually 63) 
+# same for negative correlations
+thresholdNegative = -1
+indicesNegative = as.data.frame(which(correlationsSpearman <= thresholdNegative, arr.ind = TRUE))
+rownames(indicesNegative) = NULL
+# obviously this includes correlations of variables with itself, eliminate those
+for (i in 1:nrow(indicesNegative)) {
+  if (indicesNegative[i,1] == indicesNegative[i,2]) {
+    indicesNegative[i,1] = NA
+    indicesNegative[i,2] = NA
+  }
+}
+indicesNegative = na.omit(indicesNegative)
+# 92 perfect negative correlations (includes both sides, so actually 46)
+# eliminate doubles
+source("source/CorrelationHelper.R")
+indices = eliminateDuplicateCorrelations(indices)
+indicesNegative = eliminateDuplicateCorrelations(indicesNegative)
+# some attributes occur multiple times
+removeIndices = c(indices[,1], indicesNegative[,1])
+length(unique(removeIndices)) # 53
+# -> we can remove 53 attributes in total
+removed_highCorrelation = numericalData[,unique(removeIndices)] # for backup
+numericalData = numericalData[,-unique(removeIndices)] # 1757 attributes left
+
+# run again for checking
+cornew = cor(numericalData, use="pairwise.complete.obs", method = "spearman")
+# no more correlations higher than 0.9989
+# might even be considered to remove 95% correlations, code here for demonstration purposes
+
+threshold = 0.95
+indices = as.data.frame(which(cornew >= threshold, arr.ind = TRUE))
+rownames(indices) = NULL
+# obviously this includes correlations of variables with itself, eliminate those
+for (i in 1:nrow(indices)) {
+  if (indices[i,1] == indices[i,2]) {
+    indices[i,1] = NA
+    indices[i,2] = NA
+  }
+}
+indices = na.omit(indices)
+# 44 hits (so 22)
+# same for negative correlations
+thresholdNegative = -0.95
+indicesNegative = as.data.frame(which(cornew <= thresholdNegative, arr.ind = TRUE))
+rownames(indicesNegative) = NULL
+# obviously this includes correlations of variables with itself, eliminate those
+for (i in 1:nrow(indicesNegative)) {
+  if (indicesNegative[i,1] == indicesNegative[i,2]) {
+    indicesNegative[i,1] = NA
+    indicesNegative[i,2] = NA
+  }
+}
+indicesNegative = na.omit(indicesNegative)
+# 84 hits (so 42)
+
+indices = eliminateDuplicateCorrelations(indices)
+indicesNegative = eliminateDuplicateCorrelations(indicesNegative)
+# some attributes occur multiple times
+removeIndices = c(indices[,1], indicesNegative[,1])
+length(unique(removeIndices)) # 58
+# -> we can remove 58 attributes in total
+removed_highCorrelation95 = numericalData[,unique(removeIndices)] # for backup
+numericalDataWithoutHighCor = numericalData[,-unique(removeIndices)] # 1699 attributes left
+
 #############################################
 # END CORRELATION ANALYSIS
 #############################################
+
+# pmm does not work (system is computationally singular)
+# according to the MICE paper: study last eigenvector of covmat, variables with high values there
+# often cause the singularity problem
+# this does not work with the sample data, as some entries in the covmat
+covmat = cov(numericalData, use = "pairwise.complete.obs")
+# covmat contains NAs, do some cheating here since it only concerns 314 entries
+covmat[is.na(covmat)] = 0
+eigenvectors = eigen(covmat)$vectors
+order(eigenvectors[,ncol(eigenvectors)], decreasing = TRUE)
+# highest values for attributes 561  564 1548 1292 1743  560  764  956 1469  285
+# ignore these attributes in mice to try out if pmm now works
+imputedValues = mice(numericalData[,-c(561, 564, 1548, 1292, 1743, 560, 764, 956, 1469, 285)], 
+                     method = "pmm") # does not work, exclude more attributes
+#805  219 1475  783 1279 1041  844 1432  791 437
+imputedValues = mice(numericalData[,-c(561, 564, 1548, 1292, 1743, 560, 764, 956, 1469, 285, 
+                                       805, 219, 1475, 783, 1279, 1041, 844, 1432, 791, 437)], 
+                     method = "pmm") # still does not work, ignore PMM
+
+imputedValues = mice(numericalData, method = "rf")
+# norm does not work
+imputedValues = mice(numericalData, method = "mean")
+
+pca = princomp(imputedValues) # wont work due to NAs with the normal numerical data, so use the imputed values
+# cannot take complete observations (because there are non)
+# have to try some form of value imputation
