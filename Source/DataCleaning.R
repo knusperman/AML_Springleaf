@@ -11,17 +11,21 @@ library(randomForest)
 
 trainData = read.csv("train.csv", stringsAsFactors = FALSE, strip.white = TRUE)
 ncol(trainData) # initially 1934 columns
+# still some white space remains for some reason, entirely remove all whitespace
+trainData = apply(trainData, 2, function(x) {gsub(" ", "", x)})
 
-source("source/ConvertNAs.R")
+source("source/ConvertNAs_Functions.R")
 trainData = convertObviousNAs(trainData)
 
-
 # remove ID column
-trainData = trainData[,-c(1, ncol(trainData))]
+trainData = trainData[,-1]
+
+# remove target column
+target = trainData[,ncol(trainData)]
+trainData = trainData[,-ncol(trainData)]
 
 # perform some initial manual analysis of data
 oneFactor = as.vector(which(sapply(apply(trainData, 2, unique), length) == 1)) #8 occurrences
-# 6 NAs, 1 0, 1 1
 twoFactors = as.vector(which(sapply(apply(trainData, 2, unique), length) == 2)) #66 occurrences
 threeFactors = as.vector(which(sapply(apply(trainData, 2, unique), length) == 3)) #36 occurrences
 fourFactors = as.vector(which(sapply(apply(trainData, 2, unique), length) == 4)) #65 occurrences
@@ -71,294 +75,118 @@ duplicateAttributes = findDuplicateAttributes(trainData[1:10000,]) #none
 # check for duplicate rows
 nrow(trainData) - nrow(unique(trainData)) #0
 
+# differentiate data types
+source("source/ConvertDatatypes.R")
+booleanColumns = findBooleans(trainData) #13
+dateColumns = findDates(trainData) #16
+stringColumns = findStrings(trainData) #50
+numericalColumns = !(stringColumns | booleanColumns | dateColumns) #1874
+# convert datatypes
+# convert to logical in trainData
+for (i in 1:ncol(trainData)) {
+  if (booleanColumns[i] == TRUE) trainData[,i] = as.logical(trainData[,i])
+}
+
+# convert to numeric in trainData
+for (i in 1:ncol(trainData)) {
+  if (numericalColumns[i] == TRUE) trainData[,i] = as.numeric(trainData[,i])
+}
+
 #### for initial analysis, sample 10000 rows only to speed up the performance
 # do this after data cleaning, since for data cleaning the entire dataset should be used
 set.seed(123)
 sampleIndices = sample(1:nrow(trainData), 10000, replace = FALSE)
 sampleTraining = trainData[sampleIndices,]
-write.csv2(sampleTraining, "sample.csv")
-
-# extract target
-sampleTarget = sampleTraining[,ncol(sampleTraining)]
-sampleTraining = sampleTraining[,-ncol(sampleTraining)]
-
+sampleTarget = trainData[,sampleIndices]
 # write for backup
-write.csv2(sampleTraining, "sample.csv")
+write.csv2(sampleTraining, "data/sample.csv")
 # sampleTraining = read.csv2("sample.csv", stringsAsFactors = FALSE, strip.white = TRUE)
+# sampleTraining = sampleTraining[,-1]
 
-# differentiate datatypes
-source("source/ConvertDatatypes.R")
-booleanColumns = findBooleans(sampleTraining) #13
+# differentiate datatypes in sample
 booleanData = sampleTraining[,booleanColumns]
-
-dateColumns = findDates(sampleTraining) #16
 dateData = sampleTraining[,dateColumns]
+stringData = sampleTraining[,stringColumns & !(booleanColumns | dateColumns)]
+numericalData = sampleTraining[,numericalColumns]
 
-stringColumns = findStrings(sampleTraining)
-stringData = sampleTraining[,stringColumns & !(booleanColumns | dateColumns)] #21
+#############################################
+# NA ANALYIS (consult file ConvertNAs.R for further details on the analysis)
+#############################################
+naEncodings = c(-99999, 1e+09, 99, 9999, 100, 9996, 9998, 98, 
+                999999999, 999999998, 999999997, 999999996, 999999995, 999999994)
+trainData = convertNAsFaster(trainData, naEncodings)
 
-numericalData = sampleTraining[,!(stringColumns | booleanColumns | dateColumns)] #1874
-numericalData = apply(numericalData, 2, as.numeric)
+# save
+write.csv2(trainData, "trainData_initialCleansing.csv")
+# trainData = read.csv2("trainData_initialCleansing.csv", , stringsAsFactors = FALSE, strip.white = TRUE)
+
+# find attributes that only have NA and one value
+oneValueAndNAColumns = findOneValueAndNAs(trainData) # 52
 
 
 #############################################
-# NA HANDLING
+# HANDLING OF DIFFERENT DATATYPES (consult file DatatypesAnalysis.R for further details)
 #############################################
-# inspect data to find NA encodings
-initialNAs = getNAsPercentage(sampleTraining)
-# total initial NAs: 574300 (including NAs filtered above with the trivial encoding -1, [], <blank>)
-# percentage: 574300/19250000 = 0.02983377
-
-# how many rows have only NA values
-sum(initialNAs == 1) # 0
-# remove these
-# trainData = trainData[,-which(initialNAs == 1)]
-# sampleTraining = sampleTraining[,-which(initialNAs == 1)]
-
-# now go to more sophisticated NA conversion
-# handle numericals differently that only contain one value and NAs
-oneValueAndNAColumns = findOneValueAndNAs(numericalData)
-oneValueAndNAData = numericalData[,oneValueAndNAColumns] #48
-numericalData = numericalData[,!oneValueAndNAColumns]
-
-overview = inspectValues(numericalData)
-
-# check which mean of unique values differs drastically from the mean of unique means minus outliers
-# these outliers are most likely to be different encodings of NA values
-naColumns = which(overview[5,] > (overview[6,]*10))
-
-# handle attributes with negative mean differently
-# negativeMean = overview[,which(overview[5,] < 0)]
-length(which(overview[,which(overview[5,] < 0)][5,] < (overview[,which(overview[5,] < 0)][6,]*10)))/length(overview[,which(overview[5,] < 0)]) # 0.9621212
-# almost all negative means columns are likely to be due to negative NA encodings
-# the columns not appearing there are due to NaN values when extrema are removed
-
-# drill down to find NA encodings
-naColumns = c(naColumns, which(overview[5,] < 0))
-overview[2,naColumns]
-# these seem to be mainly -99999 values -> likely encoding of NA values
-naEncodings = -99999
-overview[3,naColumns]
-# other encodings
-naEncodings = c(naEncodings, 1e+09, 99, 9999, 100) 
-# these values are likely to be NA encodings, the other found values or 'too random'
-
-# do the same analysis when 2 outliers are removed at each end 
-# random inspections have shown that sometimes NA values are encoded in different ways as two very high values
-naColumns = which(overview[5,] > (overview[7,]*10))
-overview[10,naColumns] # likely to be no NA encodings
-overview[11,naColumns] # 9996, 9998, 98 likely to be NA encodings, but inspect attributes manually
-unique(numericalData[,naColumns[2]]) #9996 likely to be NA encoding
-unique(numericalData[,naColumns[3]]) #98 likely to be NA encoding
-unique(numericalData[,naColumns[length(naColumns)-2]]) #9998 likely to be NA encoding
-naEncodings = c(naEncodings, 9996, 9998, 98)
-
-# manual inspection further revealed that sometimes there exist absurdly high values
-naColumns = findAbsurdlyHighValues(numericalData, stepThreshold = 100)
-# get the maximum 5 values for these candidate columns
-potentialNAValues = numeric(0)
-for (i in 1:length(naColumns)) {
-  uniqueValues = sort(unique(numericalData[,naColumns[i]]))
-  potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)])
-  if (length(uniqueValues) > 1) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-1])
-  if (length(uniqueValues) > 2) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-2])
-  if (length(uniqueValues) > 3) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-3])
-  if (length(uniqueValues) > 4) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-4])
-  if (length(uniqueValues) > 5) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-5])
-}
-potentialNAValues = sort(unique(potentialNAValues))
-
-# get the maximum 6 values for these candidate columns as comparison
-potentialNAValues = numeric(0)
-for (i in 1:length(naColumns)) {
-  uniqueValues = sort(unique(numericalData[,naColumns[i]]))
-  potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)])
-  if (length(uniqueValues) > 1) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-1])
-  if (length(uniqueValues) > 2) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-2])
-  if (length(uniqueValues) > 3) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-3])
-  if (length(uniqueValues) > 4) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-4])
-  if (length(uniqueValues) > 5) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-5])
-}
-# pattern-like (99999...) outliers do not change compared to the top 5 version above
-# therefore, pattern-like outliers are assumed to be NA encodings
-# e.g. a column containing all of the below outliers also contained "normal-looking" data with 3-4 digits
-
-# likely candidates for NAs are therefore 999999999, 999999998, 999999997, 999999996, 999999995, 999999994
-naEncodings = c(naEncodings, 999999999, 999999998, 999999997, 999999996, 999999995, 999999994)
-
-# convert encodings into actual NAs and update numerical data accordingly
-sampleTraining = convertNAsFaster(sampleTraining, naEncodings)
-# 4308204 NAs now out of 19240000 total entries -> 0.2239191
-numericalData = convertNAsFaster(numericalData, naEncodings)
-
-# remove these from numerical data
-numericalData = numericalData[,!oneValueAndNAColumns]
-sum(is.na(numericalData))/(nrow(numericalData)*ncol(numericalData))
-# total NAs now: 22.34%
-
-# analyze NA distributions over columns
-naPerColumn = apply(sampleTraining, 2, function(x) sum(is.na(x))/length(x))
-naPerColumn = sort(naPerColumn)
-naPerColumn = as.data.frame(naPerColumn)
-naPerColumn = as.data.frame(cbind(Attributes = seq(1, nrow(naPerColumn), by = 1), naPerColumn))
-png("fig/NA_column.png", height = 800, width = 800)
-ggplot(data = naPerColumn, aes(x = Attributes, y = naPerColumn)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Percentage of NAs") + theme_bw() +
-  theme(axis.text = element_text(size = 40, colour = "black"), 
-        axis.title = element_text(size = 40, colour = "black")) +
-  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
-dev.off()
-# analyze NA distributions over rows
-naPerRow = apply(sampleTraining, 1, function(x) sum(is.na(x))/length(x))
-naPerRow = sort(naPerRow)
-naPerRow = as.data.frame(naPerRow)
-naPerRow = as.data.frame(cbind(Attributes = seq(1, nrow(naPerRow), by = 1), naPerRow))
-
-png("fig/NA_row.png", height = 800, width = 800)
-ggplot(data = naPerRow, aes(x = Attributes, y = naPerRow)) + 
-  geom_bar(stat = "identity") + xlab("Observations") + ylab("Percentage of NAs") + theme_bw() +
-  theme(axis.text = element_text(size = 40, colour = "black"), 
-        axis.title = element_text(size = 40, colour = "black")) +
-  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
-dev.off()
-
-numericalNAs = getNAsPercentage(numericalData)
-# handle numericals differently that only contain one value and NAs
-oneValueAndNAColumns = findOneValueAndNAs(numericalData)
-oneValueAndNAData = numericalData[,oneValueAndNAColumns] #48
-numericalData = numericalData[,!oneValueAndNAColumns]
-
-
-#############################################
-# END NA HANDLING
-#############################################
-
-#############################################
-# HANDLING OF DIFFERENT DATATYPES
-#############################################
-# find out what a likely threshold for factors <-> numerical data might be
-uniqueNumericalValues = apply(numericalData, 2, function(x) {
-  length(unique(x))
-})
-uniqueNumericalValues = sort(uniqueNumericalValues)
-uniqueNumericalValues = as.data.frame(cbind(id = seq_along(uniqueNumericalValues), uniqueNumericalValues))
-png("fig/uniqueValues.png", height = 800, width = 800)
-ggplot(data = uniqueNumericalValues, aes(x = id, y = uniqueNumericalValues)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
-  theme(axis.text = element_text(size = 40, colour = "black"), 
-        axis.title = element_text(size = 40, colour = "black")) +
-  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
-dev.off()
-
-# not much to see there, drill down to only attributes with 100 unique values or less
-uniqueNumericalValues100 = uniqueNumericalValues[uniqueNumericalValues[,2] < 101,]
-png("fig/uniqueValues_100.png", height = 800, width = 800)
-ggplot(data = uniqueNumericalValues100, aes(x = id, y = uniqueNumericalValues)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
-  theme(axis.text = element_text(size = 40, colour = "black"), 
-        axis.title = element_text(size = 40, colour = "black")) +
-  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
-dev.off()
-
-# not much to see here either, look at variances of attribute values
-# reasoning: factor attribute values are likely to be close together
-# only consider less than 101 unique values, it is unlikely that there are more than 100 factors per attribute
-uniqueValuesVariances = apply(numericalData[,which(uniqueNumericalValues[,2] < 101)], 2, function(x) {
-  var(na.omit(unique(x)))
-})
-uniqueValuesVariances = sort(uniqueValuesVariances)
-uniqueValuesVariances = as.data.frame(cbind(id = seq_along(uniqueValuesVariances), uniqueValuesVariances))
-png("fig/uniqueValuesVariances_500.png", height = 800, width = 800)
-ggplot(data = uniqueValuesVariances[1:500,], aes(x = id, y = uniqueValuesVariances)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
-  theme(axis.text = element_text(size = 40, colour = "black"), 
-        axis.title = element_text(size = 40, colour = "black")) +
-  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
-dev.off()
-
-# elbow somewhere between att 250 and 350 (sorted)
-png("fig/uniqueValuesVariances_250_350.png", height = 800, width = 800)
-ggplot(data = uniqueValuesVariances[250:350,], aes(x = id, y = uniqueValuesVariances)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
-  theme(axis.text = element_text(size = 40, colour = "black"), 
-        axis.title = element_text(size = 40, colour = "black")) +
-  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
-dev.off()
-
-# find biggest gap
-gaps = abs(uniqueValuesVariances[250:349,2] - uniqueValuesVariances[251:350,2])
-which(gaps == max(gaps)) # 94
-# the biggest gap is between attribute 343 and 344
-
-# analyse the number of unique values for these
-factorPotentials = rownames(uniqueValuesVariances[1:343,])
-factorPotentials_uniqueNumericalValues = uniqueNumericalValues[rownames(uniqueNumericalValues) %in% factorPotentials,]
-factorPotentials_uniqueNumericalValues$id = seq_along(factorPotentials_uniqueNumericalValues$uniqueNumericalValues)
-png("fig/uniqueValuesVariances_factorPotentials.png", height = 800, width = 800)
-ggplot(data = factorPotentials_uniqueNumericalValues, aes(x = id, y = uniqueNumericalValues)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
-  theme(axis.text = element_text(size = 40, colour = "black"), 
-        axis.title = element_text(size = 40, colour = "black")) +
-  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
-dev.off()
-# find biggest gap
-gaps = abs(factorPotentials_uniqueNumericalValues[1:342,2] - factorPotentials_uniqueNumericalValues[2:343,2])
-which(gaps == max(gaps)) # 333
-# the biggest gap is between attribute 333 and 334
-# we therefore conclude that attributes with less than or equal to 36 unique values are categorical if there variance is also low
+numericalData = trainData[,numericalColumns]
 
 # some attributes only seem to have two distinct values
-unique(as.vector(numericalData[,which(apply(numericalData, 2, function(x) {length(unique(x))}) == 2)])) #0, 1
+unique(as.vector(numericalData[,which(apply(numericalData, 2, function(x) {length(na.omit(unique(x)))}) == 2)])) #0, 1
 
 # encode these as boolean
-booleanTemp = numericalData[,which(apply(numericalData, 2, function(x) {length(unique(x))}) == 2)] #11
-booleanTemp = convert01Booleans(booleanTemp)
+moreBooleanColumns = apply(trainData, 2, function(x) {length(unique(x))}) == 2 # 63
+
+# convert to TRUE/FALSE notion
+trainData[,moreBooleanColumns] = convert01Booleans(trainData[,moreBooleanColumns])
 
 # append to boolean data
-booleanData = cbind(booleanData, booleanTemp) #24
+booleanColumns = booleanColumns | moreBooleanColumns
 
+numericalColumns = numericalColumns & !booleanColumns
 # remove from numerical data
-numericalData = numericalData[,-which(apply(numericalData, 2, function(x) {length(unique(x))}) == 2)]
+numericalData = trainData[,numericalColumns]
 
-# plot these different attribute types
-waterfallData = data.frame(desc = c("Total attributes", 
-                                    "ID & target", "Only one value", "Boolean", "Dates",
-                                    "Strings", "Numerical", "Only 1 value and NA", "Probably categorical",
-                                    "Actual numerical"), 
-                           amount = c(1934, -2, -8, -24, -16, -21, -1863, -53, -333, -1488))
-waterfallData$id = seq_along(waterfallData$amount)
-waterfallData$cumsum = cumsum(waterfallData$amount)
-# do some ugly manual coding due to reset after "Numerical"
-waterfallData$cumsum[8:9] = waterfallData$cumsum[8:9] + 1874
-waterfallData$start = c(0, head(waterfallData$cumsum, -1))
-waterfallData$start[8:9] = c(1863, 1863-53)
-waterfallData$cumsum[10] = 0
-waterfallData$desc = factor(waterfallData$desc, levels = waterfallData$desc)
+write.csv2(trainData[,booleanColumns], "data/booleanAttributes_cleansed.csv")
+write.csv2(trainData[,dateColumns], "data/dateAttributes_cleansed.csv")
+write.csv2(trainData[,stringColumns], "data/stringAttributes_cleansed.csv")
+write.csv2(trainData[,numericalColumns], "data/numericalAttributes_cleansed.csv")
 
-png("fig/typesOfAttributes_waterfall.png", height = 800, width = 800)
-ggplot(waterfallData, aes(desc)) + 
-  scale_y_continuous(limits = c(0, 2000)) +
-  geom_rect(aes(x = desc, xmin = id - 0.45, xmax = id + 0.45, ymin = cumsum, ymax = start), fill = "black") +
-  theme_bw() +
-  theme(axis.text = element_text(size = 40, colour = "black"), 
-        axis.title = element_text(size = 40, colour = "black")) +
-  theme(plot.margin = unit(c(1,2,1,1), "cm")) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.45)) +
-  geom_text(aes(y = rep(2000, 10), label = abs(amount)), size = 10, colour = "black") +
-  xlab("") + ylab("Amount")
-dev.off()
+
+# create backups
+write.csv2(numericalData, "data/numericalData_sample10000.csv")
+write.csv2(booleanData, "data/booleanData_sample10000.csv")
+write.csv2(dateData, "data/dateData_sample10000.csv")
+write.csv2(stringData, "data/stringData_sample10000.csv")
+write.csv2(sampleTarget, "data/target_sample10000.csv")
 
 #############################################
 # END ANALYSIS OF DIFFERENT ATTRIBUTE TYPES
 #############################################
 
+# for the following, get the sample with the lowest amount of NAs
+naRows = apply(trainData, 1, is.na)
+naRows = apply(naRows, 2, sum)
+orderIndices = order(naRows)
+numericalData = read.csv2("numericalAttributes_cleansed.csv", 
+                          stringsAsFactors = FALSE, strip.white = TRUE)
+
+# sampleLowestNA = read.csv2("sampleLowestNA.csv", stringsAsFactors = FALSE, strip.white = TRUE)
+numericalData_lowestNA = numericalData[orderIndices[1:10000],]
+
+write.csv2(numericalData_lowestNA, "data/numericalData_sampleLowestNA.csv")
+# flush environment to free up some RAM
+rm(list = ls())
+numericalData_lowestNA = read.csv2("data/numericalData_sampleLowestNA.csv", stringsAsFactors = FALSE,
+                                    strip.white = TRUE, sep = ";")
+numericalData_lowestNA = apply(numericalData_lowestNA, 2, as.numeric)                                  
 #############################################
 # CORRELATION ANALYSIS
 #############################################
 
 # create correlation heatmap
-correlations = cor(numericalData, use="pairwise.complete.obs")
+correlations = cor(numericalData_lowestNA, use="pairwise.complete.obs")
 # produces NA values due to the elimination of values used by "pairwise.complete.obs" (but there is no viable alternative)
+# eliminate NAs and replace by 0
+correlations[is.na(correlations)] = 0
 
 # sort matrix according to highest correlations
 # first transform matrix into vector with indices (-> dataframe)
@@ -383,8 +211,9 @@ correlations = cor(numericalData, use="pairwise.complete.obs")
 #sum(unique(corrVector[,1])[1:100] %in% unique(corrVector[,2])[1:100])
 
 
-png("fig/corrplot.png")
-corrplot(correlations, method = "color", tl.pos = "n", ylab = "", xlab = "")
+png("fig/corrplot.png", height = 800, width = 800)
+corrplot(correlations, method = "color", tl.pos = "n", ylab = "", xlab = "", 
+         order = "AOE", cl.cex = 3)
 dev.off()
 # not much to see, plot as barchart
 
@@ -392,9 +221,9 @@ temp = correlations
 diag(temp) = NA
 correlationVector = as.vector(temp)
 correlationVector = sort(correlationVector)
-plotData = as.data.frame(cbind(id = seq(1, 2000, by = 1), 
-                               values = c(correlationVector[1:1000], 
-                                          correlationVector[(length(correlationVector)-999):length(correlationVector)])))
+plotData = as.data.frame(cbind(id = seq(1, 10000, by = 1), 
+                               values = c(correlationVector[1:5000], 
+                                          correlationVector[(length(correlationVector)-4999):length(correlationVector)])))
 plotDataAll = as.data.frame(cbind(id = seq_along(correlationVector), 
                                values = correlationVector))
 
@@ -415,20 +244,22 @@ ggplot(data = plotDataAll, aes(x = id, y = values)) +
 dev.off()
 
 # try out spearman correlations
-correlationsSpearman = cor(numericalData, use="pairwise.complete.obs", method = "spearman")
+correlationsSpearman = cor(numericalData_lowestNA, 
+                           use="pairwise.complete.obs", method = "spearman")
+correlationsSpearman[is.na(correlationsSpearman)] = 0
 
-png("fig/corrplot_spearman.png")
-corrplot(correlationsSpearman, method = "color", tl.pos = "n")
+png("fig/corrplot_spearman.png", height = 800, width = 800)
+corrplot(correlationsSpearman, method = "color", tl.pos = "n", 
+         order = "AOE", cl.cex = 3)
 dev.off()
-# not much to see, plot as barchart
 
 temp = correlationsSpearman
 diag(temp) = NA
 correlationVector = as.vector(temp)
 correlationVector = sort(correlationVector)
-plotData = as.data.frame(cbind(id = seq(1, 2000, by = 1), 
-                               values = c(correlationVector[1:1000], 
-                                          correlationVector[(length(correlationVector)-999):length(correlationVector)])))
+plotData = as.data.frame(cbind(id = seq(1, 10000, by = 1), 
+                               values = c(correlationVector[1:5000], 
+                                          correlationVector[(length(correlationVector)-4999):length(correlationVector)])))
 plotDataAll = as.data.frame(cbind(id = seq_along(correlationVector), 
                                   values = correlationVector))
 
@@ -448,8 +279,7 @@ ggplot(data = plotDataAll, aes(x = id, y = values)) +
   theme(plot.margin = unit(c(1,2,1,1), "cm")) 
 dev.off()
 
-# spearman does reveal a couple of very high (and perfect) correlations
-# find out which attributes are highly correlated
+# spearman looks similar to pearson, find entries with a correlation of 1
 
 threshold = 1
 indices = as.data.frame(which(correlationsSpearman >= threshold, arr.ind = TRUE))
@@ -462,7 +292,7 @@ for (i in 1:nrow(indices)) {
   }
 }
 indices = na.omit(indices)
-# 126 perfect correlations (includes both sides, so actually 63) 
+# 76 perfect correlations (includes both sides, so actually 38) 
 # same for negative correlations
 thresholdNegative = -1
 indicesNegative = as.data.frame(which(correlationsSpearman <= thresholdNegative, arr.ind = TRUE))
@@ -475,22 +305,25 @@ for (i in 1:nrow(indicesNegative)) {
   }
 }
 indicesNegative = na.omit(indicesNegative)
-# 92 perfect negative correlations (includes both sides, so actually 46)
+# 20 perfect negative correlations (includes both sides, so actually 10)
 # eliminate doubles
 source("source/CorrelationHelper.R")
 indices = eliminateDuplicateCorrelations(indices)
 indicesNegative = eliminateDuplicateCorrelations(indicesNegative)
 # some attributes occur multiple times
 removeIndices = c(indices[,1], indicesNegative[,1])
-length(unique(removeIndices)) # 53
-# -> we can remove 53 attributes in total
-removed_highCorrelation = numericalData[,unique(removeIndices)] # for backup
-numericalData = numericalData[,-unique(removeIndices)] # 1757 attributes left
+length(unique(removeIndices)) # 40
+removeIndices = unique(removeIndices)
+# -> we can remove 40 attributes in total
+removed_highCorrelation = numericalData_lowestNA[,unique(removeIndices)] # for backup
+numericalData_lowestNA = numericalData_lowestNA[,-unique(removeIndices)] # 1688 attributes left
+
+write.csv2(numericalData_lowestNA, "numericalDataLowestNA_WithoutCor1.csv")
 
 # run again for checking
-cornew = cor(numericalData, use="pairwise.complete.obs", method = "spearman")
+cornew = cor(numericalData_lowestNA, use="pairwise.complete.obs", method = "spearman")
 # no more correlations higher than 0.9989
-# might even be considered to remove 95% correlations, code here for demonstration purposes
+# might even be considered to remove 95% correlations, e.g. to speed up further calculations
 
 threshold = 0.95
 indices = as.data.frame(which(cornew >= threshold, arr.ind = TRUE))
@@ -524,13 +357,17 @@ indicesNegative = eliminateDuplicateCorrelations(indicesNegative)
 removeIndices = c(indices[,1], indicesNegative[,1])
 length(unique(removeIndices)) # 58
 # -> we can remove 58 attributes in total
-removed_highCorrelation95 = numericalData[,unique(removeIndices)] # for backup
-numericalDataWithoutHighCor = numericalData[,-unique(removeIndices)] # 1699 attributes left
+removed_highCorrelation95 = numericalData_lowestNA[,unique(removeIndices)] # for backup
+numericalData_lowestNA = numericalData_lowestNA[,-unique(removeIndices)] # 1688 attributes left
+
+write.csv2(numericalData_lowestNA, "numericalDataLowestNA_WithoutCor95.csv")
+
+
 
 #############################################
 # END CORRELATION ANALYSIS
 #############################################
-
+# impute values for PCA analysis
 # pmm does not work (system is computationally singular)
 # according to the MICE paper: study last eigenvector of covmat, variables with high values there
 # often cause the singularity problem
@@ -549,10 +386,18 @@ imputedValues = mice(numericalData[,-c(561, 564, 1548, 1292, 1743, 560, 764, 956
                                        805, 219, 1475, 783, 1279, 1041, 844, 1432, 791, 437)], 
                      method = "pmm") # still does not work, ignore PMM
 
-imputedValues = mice(numericalData, method = "rf")
-# norm does not work
-imputedValues = mice(numericalData, method = "mean")
 
-pca = princomp(imputedValues) # wont work due to NAs with the normal numerical data, so use the imputed values
-# cannot take complete observations (because there are non)
-# have to try some form of value imputation
+# try pmm with the lowest NA sample
+# flush environment
+rm(list = ls())
+numericalData_lowestNA = read.csv2("data/numericalDataLowestNA_WithoutCor1.csv", 
+                                   stringsAsFactors = FALSE, strip.white = TRUE)
+numericalData_lowestNA = numericalData_lowestNA[,-1]
+
+imputedValues = mice(numericalData_lowestNA, method = "pmm", m = 1, maxit = 1) # does not work 
+# system is computationally singular
+# try out if maybe removing 95% correlations also works
+imputedValues = mice(numericalData_lowestNA, method = "mean", m = 1, maxit = 1)
+
+
+pca = princomp(imputedValues) 
