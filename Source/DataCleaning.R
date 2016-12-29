@@ -282,6 +282,7 @@ removeIndices = c(indices, indicesNegative)
 length(unique(removeIndices)) # 49
 removeIndices = unique(removeIndices)
 # -> we can remove 49 attributes in total
+numericalData_lowestNA = numericalData_lowestNA[,-removeIndices]
 
 numericalData = numericalData[,-removeIndices]
 saveRDS(numericalData, "data/numericalData_withoutCor1.rds")
@@ -323,12 +324,21 @@ factorData = apply(factorData, 2, function(x) {
 })
 sum(is.na(factorData)) / (ncol(factorData) * nrow(factorData)) # 0
 numericalData = numericalData[,-factorColumns]
+numericalData_lowestNA = numericalData_lowestNA[,-factorColumns]
+factorData_lowestNA = numericalData_lowestNA[,factorColumns]
 
 saveRDS(numericalData, "data/numericalAttributes_cleansed_withoutFactors.rds")
 saveRDS(factorData, "data/factorAttributes.rds")
 
 # re-do pearson to check if it looks any different
-correlations = cor(numericalData_lowestNA[,-factorColumns], use="pairwise.complete.obs")
+
+amountOfNAs = apply(numericalData, 1, function(x) {
+  sum(is.na(x))
+})
+lowest10000 = order(amountOfNAs)[1:10000]
+numericalData = apply(numericalData, 2, as.numeric)
+
+correlations = cor(numericalData_lowestNA, use="pairwise.complete.obs")
 correlations[is.na(correlations)] = 0
 saveRDS(correlations, "data/pearson_withoutFactors.rds")
 
@@ -351,8 +361,25 @@ createCorrelationPlots(correlations, "_pearsonNoFactors")
 # numericalData_lowestNA = readRDS("data/numericalData_sampleLowestNA.rds")
 # correlationsSpearman = readRDS("data/spearman_without1.rds")
 # numericalData_noCor1 = readRDS("data/numericalData_withoutCor1.rds")
-miceMatrix = buildMiceMatrix(correlationsSpearman, usedAttributes = 10)
-imputedValues = mice(numericalData_noCor1, predictorMatrix = miceMatrix, method = "fastpmm")
+# compute pearson for miceMatrix
+
+miceMatrix = buildMiceMatrix(correlations, usedAttributes = 10)
+numberOfObs = 1000
+imputedValues = mice(numericalData[1:numberOfObs,], predictorMatrix = miceMatrix, method = "fastpmm")
+# system is computationally singular
+# try to impute numerical values with factor attributes
+predictorMatrix = matrix(ncol = (ncol(numericalData) + ncol(factorData)), 
+                         nrow = ncol(numericalData) + ncol(factorData))
+for (i in 1:ncol(numericalData)) {
+  predictorMatrix[i,] = c(rep(0, ncol(numericalData)), rep(1, ncol(factorData)))
+} 
+for (i in (ncol(numericalData)+1):(ncol(numericalData)+ncol(factorData))) {
+  predictorMatrix[i,] = c(rep(1, ncol(numericalData)), rep(0, ncol(factorData)))
+}
+imputedValues = mice(cbind(numericalData[1:numberOfObs,], factorData[1:numberOfObs,]), 
+                     predictorMatrix = predictorMatrix, method = "fastpmm")
+
+
 # mice takes ridiculously long
 imputedValues = missForest(numericalData)
 
