@@ -76,11 +76,12 @@ factorPotentials_uniqueNumericalValues[339,2]
 # the biggest gap is between attribute 339 and 340
 # we therefore conclude that attributes with less than or equal to 53 unique values are categorical if there variance is also low
 # plot these different attribute types
+# deprecated as a simple powerpoint plot is utilized
 waterfallData = data.frame(desc = c("Total attributes", 
                                     "ID & target", "Only one value", "Boolean", "Dates",
                                     "Strings", "Numerical", "Only 1 value and NA", "Probably categorical",
                                     "Actual numerical"), 
-                           amount = c(1934, -2, -8, -24, -16, -21, -1863, -53, -333, -1488))
+                           amount = c(1934, -2, -8, -67, -16, -21, -1824, -53, -333, -1488))
 waterfallData$id = seq_along(waterfallData$amount)
 waterfallData$cumsum = cumsum(waterfallData$amount)
 # do some ugly manual coding due to reset after "Numerical"

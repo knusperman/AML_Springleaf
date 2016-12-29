@@ -5,7 +5,7 @@ findStrings = function(x) {
   printTimes = floor(printTimes)
   for (i in 1:ncol(x)) {
     if (i %in% printTimes) print(paste(which(printTimes == i)*10, "% done"))
-    if (length(grep("[a-zA-Z]", x[,i], perl = TRUE)) > 0) {
+    if (length(grep("[a-zA-Z]", na.omit(x[,i]), perl = TRUE)) > 0) {
       result[i] = TRUE
     }
   }

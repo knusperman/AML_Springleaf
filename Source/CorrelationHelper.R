@@ -15,3 +15,20 @@ eliminateDuplicateCorrelations = function(x) {
   }
   return(x[-remove,])
 }
+
+# provides the attributes with the highest absolute correlation per attribute
+# to limit the amount of attributes used for value imputation for the most
+# expressive ones for the attribute of the missing value
+buildMiceMatrix = function(correlation, usedAttributes = 100) {
+  diag(correlation) = 0
+  result = matrix(ncol = ncol(correlation), nrow = nrow(correlation))
+  for (i in 1:ncol(correlation)) {
+    cors = order(abs(correlation[,i]))[1:usedAttributes]
+    temp = seq(1, ncol(correlation), by = 1)
+    temp = temp %in% cors
+    temp[temp == TRUE] = 1
+    temp[temp == FALSE] = 0
+    result[i,] = temp
+  }
+  return(result)
+}

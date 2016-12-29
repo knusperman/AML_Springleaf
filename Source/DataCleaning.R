@@ -9,13 +9,16 @@ library(corrplot)
 library(mice)
 library(randomForest)
 
-trainData = read.csv("train.csv", stringsAsFactors = FALSE, strip.white = TRUE)
+trainData = read.csv("data/train.csv", stringsAsFactors = FALSE, strip.white = TRUE)
 ncol(trainData) # initially 1934 columns
 # still some white space remains for some reason, entirely remove all whitespace
 trainData = apply(trainData, 2, function(x) {gsub(" ", "", x)})
 
 source("source/ConvertNAs_Functions.R")
 trainData = convertObviousNAs(trainData)
+
+saveRDS(trainData, "data/check1.rds") # backup
+# trainData = readRDS("data/check1.rds")
 
 # remove ID column
 trainData = trainData[,-1]
@@ -39,6 +42,7 @@ moreThanTenFactors = as.vector(which(sapply(apply(trainData, 2, unique), length)
 
 # remove columns with only one factor (they are basically useless)
 trainData = trainData[,-oneFactor]
+ncol(trainData) # 1924
 
 # find duplicate attributes
 # this function does NOT check, whether one vector contains more information than the other
@@ -77,10 +81,18 @@ nrow(trainData) - nrow(unique(trainData)) #0
 
 # differentiate data types
 source("source/ConvertDatatypes.R")
-booleanColumns = findBooleans(trainData) #13
-dateColumns = findDates(trainData) #16
-stringColumns = findStrings(trainData) #50
-numericalColumns = !(stringColumns | booleanColumns | dateColumns) #1874
+booleanColumns = findBooleans(trainData) 
+sum(booleanColumns) #13
+dateColumns = findDates(trainData)
+sum(dateColumns) #16
+stringColumns = findStrings(trainData) 
+stringColumns = stringColumns & !booleanColumns & !dateColumns 
+sum(stringColumns) #50
+numericalColumns = !(stringColumns | booleanColumns | dateColumns) 
+sum(numericalColumns) #1874
+saveRDS(cbind(booleanColumns, dateColumns, stringColumns, numericalColumns), 
+        "attributes1.rds")
+
 # convert datatypes
 # convert to logical in trainData
 for (i in 1:ncol(trainData)) {
@@ -92,23 +104,6 @@ for (i in 1:ncol(trainData)) {
   if (numericalColumns[i] == TRUE) trainData[,i] = as.numeric(trainData[,i])
 }
 
-#### for initial analysis, sample 10000 rows only to speed up the performance
-# do this after data cleaning, since for data cleaning the entire dataset should be used
-set.seed(123)
-sampleIndices = sample(1:nrow(trainData), 10000, replace = FALSE)
-sampleTraining = trainData[sampleIndices,]
-sampleTarget = trainData[,sampleIndices]
-# write for backup
-write.csv2(sampleTraining, "data/sample.csv")
-# sampleTraining = read.csv2("sample.csv", stringsAsFactors = FALSE, strip.white = TRUE)
-# sampleTraining = sampleTraining[,-1]
-
-# differentiate datatypes in sample
-booleanData = sampleTraining[,booleanColumns]
-dateData = sampleTraining[,dateColumns]
-stringData = sampleTraining[,stringColumns & !(booleanColumns | dateColumns)]
-numericalData = sampleTraining[,numericalColumns]
-
 #############################################
 # NA ANALYIS (consult file ConvertNAs.R for further details on the analysis)
 #############################################
@@ -116,67 +111,73 @@ naEncodings = c(-99999, 1e+09, 99, 9999, 100, 9996, 9998, 98,
                 999999999, 999999998, 999999997, 999999996, 999999995, 999999994)
 trainData = convertNAsFaster(trainData, naEncodings)
 
-# save
-write.csv2(trainData, "trainData_initialCleansing.csv")
-# trainData = read.csv2("trainData_initialCleansing.csv", , stringsAsFactors = FALSE, strip.white = TRUE)
+saveRDS(trainData, "data/check2.rds") # backup
+# trainData = readRDS("data/check2.rds")
 
 # find attributes that only have NA and one value
-oneValueAndNAColumns = findOneValueAndNAs(trainData) # 52
+oneValueAndNAColumns = findOneValueAndNAs(trainData) 
+sum(oneValueAndNAColumns) # 52
 
+# convert these into boolean, NA translated to FALSE
+trainData[,oneValueAndNAColumns] = convertOneValueAndNA(trainData[,oneValueAndNAColumns])
+
+# add to boolean columns
+booleanColumns = booleanColumns | oneValueAndNAColumns 
+sum(booleanColumns) # 56
 
 #############################################
 # HANDLING OF DIFFERENT DATATYPES (consult file DatatypesAnalysis.R for further details)
 #############################################
-numericalData = trainData[,numericalColumns]
 
 # some attributes only seem to have two distinct values
-unique(as.vector(numericalData[,which(apply(numericalData, 2, function(x) {length(na.omit(unique(x)))}) == 2)])) #0, 1
-
 # encode these as boolean
-moreBooleanColumns = apply(trainData, 2, function(x) {length(unique(x))}) == 2 # 63
+moreBooleanColumns = apply(trainData, 2, function(x) {length(unique(x))}) == 2 
+sum(moreBooleanColumns) # 63
+
+# eliminate duplicates with booleanColumns
+moreBooleanColumns = moreBooleanColumns & (!booleanColumns) 
+sum(moreBooleanColumns) # 11
+unique(rapply(trainData[,moreBooleanColumns], unique)) # only 0, 1
 
 # convert to TRUE/FALSE notion
 trainData[,moreBooleanColumns] = convert01Booleans(trainData[,moreBooleanColumns])
 
 # append to boolean data
 booleanColumns = booleanColumns | moreBooleanColumns
+sum(booleanColumns) # 67
 
 numericalColumns = numericalColumns & !booleanColumns
-# remove from numerical data
-numericalData = trainData[,numericalColumns]
+stringColumns = stringColumns & !booleanColumns
 
-write.csv2(trainData[,booleanColumns], "data/booleanAttributes_cleansed.csv")
-write.csv2(trainData[,dateColumns], "data/dateAttributes_cleansed.csv")
-write.csv2(trainData[,stringColumns], "data/stringAttributes_cleansed.csv")
-write.csv2(trainData[,numericalColumns], "data/numericalAttributes_cleansed.csv")
+sum(numericalColumns) # 1824
+sum(booleanColumns) # 67
+sum(dateColumns) # 16
+sum(stringColumns) # 17
 
+saveRDS(trainData[,booleanColumns], "data/booleanAttributes_cleansed.rds")
+saveRDS(trainData[,dateColumns], "data/dateAttributes_cleansed.rds")
+saveRDS(trainData[,stringColumns], "data/stringAttributes_cleansed.rds")
+saveRDS(trainData[,numericalColumns], "data/numericalAttributes_cleansed.rds")
 
-# create backups
-write.csv2(numericalData, "data/numericalData_sample10000.csv")
-write.csv2(booleanData, "data/booleanData_sample10000.csv")
-write.csv2(dateData, "data/dateData_sample10000.csv")
-write.csv2(stringData, "data/stringData_sample10000.csv")
-write.csv2(sampleTarget, "data/target_sample10000.csv")
+#booleanData = readRDS("data/booleanAttributes_cleansed.rds")
+#dateData = readRDS("data/dateAttributes_cleansed.rds")
+#stringData = readRDS("data/stringAttributes_cleansed.rds")
+#numericalData = readRDS("data/numericalAttributes_cleansed.rds")
 
 #############################################
 # END ANALYSIS OF DIFFERENT ATTRIBUTE TYPES
 #############################################
 
-# for the following, get the sample with the lowest amount of NAs
-naRows = apply(trainData, 1, is.na)
+# for the following, get the sample with the lowest amount of NAs in the numerical data
+numericalData = readRDS("data/numericalAttributes_cleansed.rds")
+naRows = apply(numericalData, 1, is.na)
 naRows = apply(naRows, 2, sum)
 orderIndices = order(naRows)
-numericalData = read.csv2("numericalAttributes_cleansed.csv", 
-                          stringsAsFactors = FALSE, strip.white = TRUE)
 
 # sampleLowestNA = read.csv2("sampleLowestNA.csv", stringsAsFactors = FALSE, strip.white = TRUE)
 numericalData_lowestNA = numericalData[orderIndices[1:10000],]
 
-write.csv2(numericalData_lowestNA, "data/numericalData_sampleLowestNA.csv")
-# flush environment to free up some RAM
-rm(list = ls())
-numericalData_lowestNA = read.csv2("data/numericalData_sampleLowestNA.csv", stringsAsFactors = FALSE,
-                                    strip.white = TRUE, sep = ";")
+saveRDS(numericalData_lowestNA, "data/numericalData_sampleLowestNA.rds")
 numericalData_lowestNA = apply(numericalData_lowestNA, 2, as.numeric)                                  
 #############################################
 # CORRELATION ANALYSIS
@@ -187,6 +188,7 @@ correlations = cor(numericalData_lowestNA, use="pairwise.complete.obs")
 # produces NA values due to the elimination of values used by "pairwise.complete.obs" (but there is no viable alternative)
 # eliminate NAs and replace by 0
 correlations[is.na(correlations)] = 0
+saveRDS(correlations, "data/pearson.rds")
 
 # sort matrix according to highest correlations
 # first transform matrix into vector with indices (-> dataframe)
@@ -247,6 +249,8 @@ dev.off()
 correlationsSpearman = cor(numericalData_lowestNA, 
                            use="pairwise.complete.obs", method = "spearman")
 correlationsSpearman[is.na(correlationsSpearman)] = 0
+saveRDS(correlationsSpearman, "data/spearman.rds")
+# correlationsSpearman = readRDS("data/spearman.rds")
 
 png("fig/corrplot_spearman.png", height = 800, width = 800)
 corrplot(correlationsSpearman, method = "color", tl.pos = "n", 
@@ -279,7 +283,9 @@ ggplot(data = plotDataAll, aes(x = id, y = values)) +
   theme(plot.margin = unit(c(1,2,1,1), "cm")) 
 dev.off()
 
-# spearman looks similar to pearson, find entries with a correlation of 1
+# spearman looks similar to pearson, find entries with a correlation of 1 for pearson
+# we are on the safe side if we kick out pearson cors of 1
+# everything that has pearson 1, also has spearman 1
 
 threshold = 1
 indices = as.data.frame(which(correlationsSpearman >= threshold, arr.ind = TRUE))
@@ -315,53 +321,7 @@ removeIndices = c(indices[,1], indicesNegative[,1])
 length(unique(removeIndices)) # 40
 removeIndices = unique(removeIndices)
 # -> we can remove 40 attributes in total
-removed_highCorrelation = numericalData_lowestNA[,unique(removeIndices)] # for backup
-numericalData_lowestNA = numericalData_lowestNA[,-unique(removeIndices)] # 1688 attributes left
-
-write.csv2(numericalData_lowestNA, "numericalDataLowestNA_WithoutCor1.csv")
-
-# run again for checking
-cornew = cor(numericalData_lowestNA, use="pairwise.complete.obs", method = "spearman")
-# no more correlations higher than 0.9989
-# might even be considered to remove 95% correlations, e.g. to speed up further calculations
-
-threshold = 0.95
-indices = as.data.frame(which(cornew >= threshold, arr.ind = TRUE))
-rownames(indices) = NULL
-# obviously this includes correlations of variables with itself, eliminate those
-for (i in 1:nrow(indices)) {
-  if (indices[i,1] == indices[i,2]) {
-    indices[i,1] = NA
-    indices[i,2] = NA
-  }
-}
-indices = na.omit(indices)
-# 44 hits (so 22)
-# same for negative correlations
-thresholdNegative = -0.95
-indicesNegative = as.data.frame(which(cornew <= thresholdNegative, arr.ind = TRUE))
-rownames(indicesNegative) = NULL
-# obviously this includes correlations of variables with itself, eliminate those
-for (i in 1:nrow(indicesNegative)) {
-  if (indicesNegative[i,1] == indicesNegative[i,2]) {
-    indicesNegative[i,1] = NA
-    indicesNegative[i,2] = NA
-  }
-}
-indicesNegative = na.omit(indicesNegative)
-# 84 hits (so 42)
-
-indices = eliminateDuplicateCorrelations(indices)
-indicesNegative = eliminateDuplicateCorrelations(indicesNegative)
-# some attributes occur multiple times
-removeIndices = c(indices[,1], indicesNegative[,1])
-length(unique(removeIndices)) # 58
-# -> we can remove 58 attributes in total
-removed_highCorrelation95 = numericalData_lowestNA[,unique(removeIndices)] # for backup
-numericalData_lowestNA = numericalData_lowestNA[,-unique(removeIndices)] # 1688 attributes left
-
-write.csv2(numericalData_lowestNA, "numericalDataLowestNA_WithoutCor95.csv")
-
+# but do this after value imputation 
 
 
 #############################################
@@ -371,33 +331,20 @@ write.csv2(numericalData_lowestNA, "numericalDataLowestNA_WithoutCor95.csv")
 # pmm does not work (system is computationally singular)
 # according to the MICE paper: study last eigenvector of covmat, variables with high values there
 # often cause the singularity problem
-# this does not work with the sample data, as some entries in the covmat
-covmat = cov(numericalData, use = "pairwise.complete.obs")
-# covmat contains NAs, do some cheating here since it only concerns 314 entries
-covmat[is.na(covmat)] = 0
-eigenvectors = eigen(covmat)$vectors
-order(eigenvectors[,ncol(eigenvectors)], decreasing = TRUE)
-# highest values for attributes 561  564 1548 1292 1743  560  764  956 1469  285
-# ignore these attributes in mice to try out if pmm now works
-imputedValues = mice(numericalData[,-c(561, 564, 1548, 1292, 1743, 560, 764, 956, 1469, 285)], 
-                     method = "pmm") # does not work, exclude more attributes
-#805  219 1475  783 1279 1041  844 1432  791 437
-imputedValues = mice(numericalData[,-c(561, 564, 1548, 1292, 1743, 560, 764, 956, 1469, 285, 
-                                       805, 219, 1475, 783, 1279, 1041, 844, 1432, 791, 437)], 
-                     method = "pmm") # still does not work, ignore PMM
+# this still does not work for our data
+# other approach (to also speed up the imputation: only use the 100 attributes to impute values
+# for one attribute with the highest correlation)
+# use spearman
+# build usage matrix for mice
+# numericalData_lowestNA = readRDS("data/numericalData_sampleLowestNA.rds")
+# correlationSpearman = readRDS("data/spearman.rds")
+miceMatrix = buildMiceMatrix(correlationsSpearman, usedAttributes = 100)
+imputedValues = mice(numericalData_lowestNA[,1:100], method = "pmm")
+imputedValues = mice(numericalData, predictorMatrix = miceMatrix, method = "pmm")
 
 
 # try pmm with the lowest NA sample
 # flush environment
-rm(list = ls())
-numericalData_lowestNA = read.csv2("data/numericalDataLowestNA_WithoutCor1.csv", 
-                                   stringsAsFactors = FALSE, strip.white = TRUE)
-numericalData_lowestNA = numericalData_lowestNA[,-1]
-
-imputedValues = mice(numericalData_lowestNA, method = "pmm", m = 1, maxit = 1) # does not work 
-# system is computationally singular
-# try out if maybe removing 95% correlations also works
-imputedValues = mice(numericalData_lowestNA, method = "mean", m = 1, maxit = 1)
-
+# rm(list = ls())
 
 pca = princomp(imputedValues) 

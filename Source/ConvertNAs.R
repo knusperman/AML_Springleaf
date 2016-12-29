@@ -37,7 +37,7 @@ naEncodings = -99999
 overview[3,naColumns]
 # other encodings
 naEncodings = c(naEncodings, 1e+09, 99, 9999, 100) 
-# these values are likely to be NA encodings, the other found values or 'too random'
+# these values are likely to be NA encodings, the other found values are 'too random'
 
 # do the same analysis when 2 outliers are removed at each end 
 # random inspections have shown that sometimes NA values are encoded in different ways as two very high values
@@ -74,6 +74,7 @@ for (i in 1:length(naColumns)) {
   if (length(uniqueValues) > 3) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-3])
   if (length(uniqueValues) > 4) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-4])
   if (length(uniqueValues) > 5) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-5])
+  if (length(uniqueValues) > 6) potentialNAValues = c(potentialNAValues, uniqueValues[length(uniqueValues)-6])
 }
 # pattern-like (99999...) outliers do not change compared to the top 5 version above
 # therefore, pattern-like outliers are assumed to be NA encodings

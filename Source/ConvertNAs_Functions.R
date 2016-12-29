@@ -114,3 +114,15 @@ convertNAsFaster = function(x, naEncodings) {
   })
   return(a)
 }
+
+convertOneValueAndNA = function(x) {
+  for (i in 1:ncol(x)) {
+    temp = x[,i]
+    nas = is.na(temp)
+    temp[nas] = FALSE
+    temp[!nas] = TRUE
+    temp = as.logical(temp)
+    x[,i] = temp
+  }
+  return(x)
+}
