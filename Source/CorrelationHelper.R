@@ -16,6 +16,21 @@ eliminateDuplicateCorrelations = function(x) {
   return(x[-remove,])
 }
 
+# eliminates the duplicates from the correlations
+# but eliminates keeps the one with more NAs
+# this results in the column with more NAs being deleted in the end
+eliminateDuplicateCorrelationsMoreNAs = function(indices, data) {
+  result = numeric((nrow(indices)/2))
+  for(i in 1:nrow(indices)) {
+    nas1 = sum(is.na(data[,indices[i,1]]))
+    nas2 = sum(is.na(data[,indices[i,2]]))
+    if (nas1 > nas2) result[i] = indices[i,1]
+    else result[i] = indices[i,2]
+    
+  }
+  return(unique(result))
+}
+
 # provides the attributes with the highest absolute correlation per attribute
 # to limit the amount of attributes used for value imputation for the most
 # expressive ones for the attribute of the missing value

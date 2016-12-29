@@ -3,11 +3,13 @@ if (!"reshape2" %in% installed.packages()) install.packages("reshape2")
 if (!"corrplot" %in% installed.packages()) install.packages("corrplot")
 if (!"mice" %in% installed.packages()) install.packages("mice")
 if (!"randomForest" %in% installed.packages()) install.packages("randomForest")
+if (!"missForest" %in% installed.packages()) install.packages("missForest")
 library(ggplot2)
 library(reshape2)
 library(corrplot)
 library(mice)
 library(randomForest)
+library(missForest)
 
 trainData = read.csv("data/train.csv", stringsAsFactors = FALSE, strip.white = TRUE)
 ncol(trainData) # initially 1934 columns
@@ -298,7 +300,7 @@ for (i in 1:nrow(indices)) {
   }
 }
 indices = na.omit(indices)
-# 76 perfect correlations (includes both sides, so actually 38) 
+# 90 perfect correlations (includes both sides, so actually 45) 
 # same for negative correlations
 thresholdNegative = -1
 indicesNegative = as.data.frame(which(correlationsSpearman <= thresholdNegative, arr.ind = TRUE))
@@ -311,18 +313,19 @@ for (i in 1:nrow(indicesNegative)) {
   }
 }
 indicesNegative = na.omit(indicesNegative)
-# 20 perfect negative correlations (includes both sides, so actually 10)
+# 26 perfect negative correlations (includes both sides, so actually 13)
 # eliminate doubles
 source("source/CorrelationHelper.R")
-indices = eliminateDuplicateCorrelations(indices)
-indicesNegative = eliminateDuplicateCorrelations(indicesNegative)
+indices = eliminateDuplicateCorrelationsMoreNAs(indices, numericalData)
+indicesNegative = eliminateDuplicateCorrelationsMoreNAs(indicesNegative, numericalData)
 # some attributes occur multiple times
-removeIndices = c(indices[,1], indicesNegative[,1])
-length(unique(removeIndices)) # 40
+removeIndices = c(indices, indicesNegative)
+length(unique(removeIndices)) # 49
 removeIndices = unique(removeIndices)
-# -> we can remove 40 attributes in total
-# but do this after value imputation 
+# -> we can remove 49 attributes in total
 
+numericalData = numericalData[,-removeIndices]
+saveRDS(numericalData, "numericalData_withoutCor1.rds")
 
 #############################################
 # END CORRELATION ANALYSIS
@@ -337,10 +340,15 @@ removeIndices = unique(removeIndices)
 # use spearman
 # build usage matrix for mice
 # numericalData_lowestNA = readRDS("data/numericalData_sampleLowestNA.rds")
-# correlationSpearman = readRDS("data/spearman.rds")
+# correlationsSpearman = readRDS("data/spearman.rds")
+# numericalData = readRDS("data/numericalAttributes_cleansed.rds")
 miceMatrix = buildMiceMatrix(correlationsSpearman, usedAttributes = 100)
-imputedValues = mice(numericalData_lowestNA[,1:100], method = "pmm")
 imputedValues = mice(numericalData, predictorMatrix = miceMatrix, method = "pmm")
+imputedValues = mice(numericalData[,1:10], method = "pmm")
+# mice takes ridiculously long
+imputedValues = missForest(numericalData)
+
+saveRDS(imputedValues, "imputedValues.RDS")
 
 
 # try pmm with the lowest NA sample
