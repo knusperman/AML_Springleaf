@@ -38,7 +38,7 @@ uniqueValuesVariances = sort(uniqueValuesVariances)
 uniqueValuesVariances = as.data.frame(cbind(id = seq_along(uniqueValuesVariances), uniqueValuesVariances))
 png("fig/uniqueValuesVariances_500.png", height = 800, width = 800)
 ggplot(data = uniqueValuesVariances[1:500,], aes(x = id, y = uniqueValuesVariances)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Variance") + theme_bw() +
   theme(axis.text = element_text(size = 40, colour = "black"), 
         axis.title = element_text(size = 40, colour = "black")) +
   theme(plot.margin = unit(c(1,2,1,1), "cm")) 
@@ -47,7 +47,7 @@ dev.off()
 # elbow somewhere between att 200 and 400 (sorted)
 png("fig/uniqueValuesVariances_200_400.png", height = 800, width = 800)
 ggplot(data = uniqueValuesVariances[200:400,], aes(x = id, y = uniqueValuesVariances)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of unique values") + theme_bw() +
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Variance") + theme_bw() +
   theme(axis.text = element_text(size = 40, colour = "black"), 
         axis.title = element_text(size = 40, colour = "black")) +
   theme(plot.margin = unit(c(1,2,1,1), "cm")) 
@@ -55,11 +55,11 @@ dev.off()
 
 # find biggest gap
 gaps = abs(uniqueValuesVariances[200:399,2] - uniqueValuesVariances[201:400,2])
-which(gaps == max(gaps)) # 150
-# the biggest gap is between attribute 349 and 350
+which(gaps == max(gaps)) # 158
+# the biggest gap is between attribute 357 and 358
 
 # analyse the number of unique values for these
-factorPotentials = rownames(uniqueValuesVariances[1:349,])
+factorPotentials = rownames(uniqueValuesVariances[1:357,])
 factorPotentials_uniqueNumericalValues = uniqueNumericalValues[rownames(uniqueNumericalValues) %in% factorPotentials,]
 factorPotentials_uniqueNumericalValues$id = seq_along(factorPotentials_uniqueNumericalValues$uniqueNumericalValues)
 png("fig/uniqueValuesVariances_factorPotentials.png", height = 800, width = 800)
@@ -71,10 +71,37 @@ ggplot(data = factorPotentials_uniqueNumericalValues, aes(x = id, y = uniqueNume
 dev.off()
 # find biggest gap
 gaps = abs(factorPotentials_uniqueNumericalValues[1:348,2] - factorPotentials_uniqueNumericalValues[2:349,2])
-which(gaps == max(gaps)) # 339
-factorPotentials_uniqueNumericalValues[339,2]
-# the biggest gap is between attribute 339 and 340
-# we therefore conclude that attributes with less than or equal to 53 unique values are categorical if there variance is also low
+which(gaps == max(gaps)) # 348
+factorPotentials_uniqueNumericalValues[348,2]
+# the biggest gap is between attribute 348 and 349
+# we therefore conclude that attributes with less than or equal to 23 unique values are categorical if there variance is also low
+saveRDS(factorPotentials_uniqueNumericalValues[1:348,], "data/factorPotentials.rds")
+
+
+# plot the relationship between unique value
+uniqueNumericalValues = apply(numericalData, 2, function(x) {
+  length(unique(x))
+})
+uniqueNumericalValues = sort(uniqueNumericalValues)
+uniqueValuesVariances = apply(numericalData[,which(uniqueNumericalValues < 101)], 2, function(x) {
+  var(na.omit(unique(x)))
+})
+uniqueNumericalValues = uniqueNumericalValues[uniqueNumericalValues < 101]
+ord = order(uniqueNumericalValues)
+relationship = as.data.frame(cbind(uniqueNumericalValues, uniqueValuesVariances))
+relationship = relationship[ord,]
+png("fig/uniqueValues.png", height = 800, width = 800)
+ggplot(data = relationship, aes(x = uniqueNumericalValues, y = log(uniqueValuesVariances))) + 
+  geom_bar(stat = "identity") + xlab("Number of unique values") + ylab("Variance of unique values") + theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
+dev.off()
+
+# not very insightful
+# apparently, ordering by unique values and looking at the variance does not result in much
+
+
 # plot these different attribute types
 # deprecated as a simple powerpoint plot is utilized
 waterfallData = data.frame(desc = c("Total attributes", 

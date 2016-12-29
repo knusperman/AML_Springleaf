@@ -128,7 +128,7 @@ booleanColumns = booleanColumns | oneValueAndNAColumns
 sum(booleanColumns) # 56
 
 #############################################
-# HANDLING OF DIFFERENT DATATYPES (consult file DatatypesAnalysis.R for further details)
+# HANDLING OF DIFFERENT DATATYPES
 #############################################
 
 # some attributes only seem to have two distinct values
@@ -186,6 +186,8 @@ numericalData_lowestNA = apply(numericalData_lowestNA, 2, as.numeric)
 #############################################
 
 # create correlation heatmap
+# use numericalData_lowestNA as a proxy for the real correlations (taking the entire 
+# dataset simply takes too long, especially for spearman)
 correlations = cor(numericalData_lowestNA, use="pairwise.complete.obs")
 # produces NA values due to the elimination of values used by "pairwise.complete.obs" (but there is no viable alternative)
 # eliminate NAs and replace by 0
@@ -214,30 +216,7 @@ saveRDS(correlations, "data/pearson.rds")
 #corrVector = corrVector[seq(1, nrow(corrVector) - 1, by = 2),]
 #sum(unique(corrVector[,1])[1:100] %in% unique(corrVector[,2])[1:100])
 
-
-png("fig/corrplot.png", height = 800, width = 800)
-corrplot(correlations, method = "color", tl.pos = "n", ylab = "", xlab = "", 
-         order = "AOE", cl.cex = 3)
-dev.off()
-# not much to see, plot as barchart
-
-temp = correlations
-diag(temp) = NA
-correlationVector = as.vector(temp)
-correlationVector = sort(correlationVector)
-plotData = as.data.frame(cbind(id = seq(1, 10000, by = 1), 
-                               values = c(correlationVector[1:5000], 
-                                          correlationVector[(length(correlationVector)-4999):length(correlationVector)])))
-plotDataAll = as.data.frame(cbind(id = seq_along(correlationVector), 
-                               values = correlationVector))
-
-png("fig/correlations_barplot.png", height = 800, width = 800)
-ggplot(data = plotData, aes(x = id, y = values)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Correlation") + theme_bw() +
-  theme(axis.text = element_text(size = 40, colour = "black"), 
-        axis.title = element_text(size = 40, colour = "black")) +
-  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
-dev.off()
+createCorrelationPlots(correlations, "_pearson")
 
 png("fig/correlations_barplot_all.png", height = 800, width = 800)
 ggplot(data = plotDataAll, aes(x = id, y = values)) + 
@@ -254,28 +233,7 @@ correlationsSpearman[is.na(correlationsSpearman)] = 0
 saveRDS(correlationsSpearman, "data/spearman.rds")
 # correlationsSpearman = readRDS("data/spearman.rds")
 
-png("fig/corrplot_spearman.png", height = 800, width = 800)
-corrplot(correlationsSpearman, method = "color", tl.pos = "n", 
-         order = "AOE", cl.cex = 3)
-dev.off()
-
-temp = correlationsSpearman
-diag(temp) = NA
-correlationVector = as.vector(temp)
-correlationVector = sort(correlationVector)
-plotData = as.data.frame(cbind(id = seq(1, 10000, by = 1), 
-                               values = c(correlationVector[1:5000], 
-                                          correlationVector[(length(correlationVector)-4999):length(correlationVector)])))
-plotDataAll = as.data.frame(cbind(id = seq_along(correlationVector), 
-                                  values = correlationVector))
-
-png("fig/correlations_barplot_spearman.png", height = 800, width = 800)
-ggplot(data = plotData, aes(x = id, y = values)) + 
-  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Correlation") + theme_bw() +
-  theme(axis.text = element_text(size = 40, colour = "black"), 
-        axis.title = element_text(size = 40, colour = "black")) +
-  theme(plot.margin = unit(c(1,2,1,1), "cm")) 
-dev.off()
+createCorrelationPlots(correlations, "_spearman")
 
 png("fig/correlations_barplot_all_spearman.png", height = 800, width = 800)
 ggplot(data = plotDataAll, aes(x = id, y = values)) + 
@@ -313,6 +271,7 @@ for (i in 1:nrow(indicesNegative)) {
   }
 }
 indicesNegative = na.omit(indicesNegative)
+
 # 26 perfect negative correlations (includes both sides, so actually 13)
 # eliminate doubles
 source("source/CorrelationHelper.R")
@@ -325,11 +284,61 @@ removeIndices = unique(removeIndices)
 # -> we can remove 49 attributes in total
 
 numericalData = numericalData[,-removeIndices]
-saveRDS(numericalData, "numericalData_withoutCor1.rds")
+saveRDS(numericalData, "data/numericalData_withoutCor1.rds")
+numericalData = readRDS("data/numericalData_withoutCor1.rds")
+
+numericalData_lowestNA = readRDS("data/numericalData_sampleLowestNA.rds")
+numericalData_lowestNA = numericalData_lowestNA[,-removeIndices]
+numericalData_lowestNA = apply(numericalData_lowestNA, 2, as.numeric)
+saveRDS(numericalData_lowestNA, "data/numericalData_sampleLowestNA_withoutCor1.rds")
+
+# compute new spearman correlation for value imputation (with removed cor = 1)
+correlationsSpearman = cor(numericalData_lowestNA, 
+                           use="pairwise.complete.obs", method = "spearman")
+correlationsSpearman[is.na(correlationsSpearman)] = 0
+saveRDS(correlationsSpearman, "data/spearman_without1.rds")
+write.csv2(correlationsSpearman, "correlationsSpearman.csv")
+length(which(correlationsSpearman == 1))
 
 #############################################
 # END CORRELATION ANALYSIS
 #############################################
+
+#############################################
+# HANDLING OF FACTORS (consult file DatatypesAnalysis.R for further details)
+#############################################
+factorPotentials_uniqueNumericalValues = 
+  readRDS("data/factorPotentials.rds") # result of considerations of DatatypesAnalysis.R
+factorColumns = which(colnames(numericalData) %in% rownames(factorPotentials_uniqueNumericalValues))
+factorData = numericalData[,factorColumns]
+sum(is.na(factorData)) / (ncol(factorData) * nrow(factorData)) # 0.1402106
+sum(is.na(numericalData)) / (ncol(numericalData) * nrow(numericalData)) # 0.2266638
+factorData = apply(factorData, 2, as.numeric) # somehow not all columns are saved as numeric
+# -> much lower NA percentage in factor data
+# encode factor NAs simply as highest factor level + 1
+factorData = apply(factorData, 2, function(x) {
+  maximum = max(na.omit(x))
+  x[is.na(x)] = maximum + 1
+  x = as.factor(x)
+})
+sum(is.na(factorData)) / (ncol(factorData) * nrow(factorData)) # 0
+numericalData = numericalData[,-factorColumns]
+
+saveRDS(numericalData, "data/numericalAttributes_cleansed_withoutFactors.rds")
+saveRDS(factorData, "data/factorAttributes.rds")
+
+# re-do pearson to check if it looks any different
+correlations = cor(numericalData_lowestNA[,-factorColumns], use="pairwise.complete.obs")
+correlations[is.na(correlations)] = 0
+saveRDS(correlations, "data/pearson_withoutFactors.rds")
+
+createCorrelationPlots(correlations, "_pearsonNoFactors")
+# looks similar, dont re-do this for spearman (takes longer)
+
+#############################################
+# END HANDLING OF FACTORS
+#############################################
+
 # impute values for PCA analysis
 # pmm does not work (system is computationally singular)
 # according to the MICE paper: study last eigenvector of covmat, variables with high values there
@@ -340,17 +349,16 @@ saveRDS(numericalData, "numericalData_withoutCor1.rds")
 # use spearman
 # build usage matrix for mice
 # numericalData_lowestNA = readRDS("data/numericalData_sampleLowestNA.rds")
-# correlationsSpearman = readRDS("data/spearman.rds")
-# numericalData = readRDS("data/numericalAttributes_cleansed.rds")
-miceMatrix = buildMiceMatrix(correlationsSpearman, usedAttributes = 100)
-imputedValues = mice(numericalData, predictorMatrix = miceMatrix, method = "pmm")
-imputedValues = mice(numericalData[,1:10], method = "pmm")
+# correlationsSpearman = readRDS("data/spearman_without1.rds")
+# numericalData_noCor1 = readRDS("data/numericalData_withoutCor1.rds")
+miceMatrix = buildMiceMatrix(correlationsSpearman, usedAttributes = 10)
+imputedValues = mice(numericalData_noCor1, predictorMatrix = miceMatrix, method = "fastpmm")
 # mice takes ridiculously long
 imputedValues = missForest(numericalData)
 
 saveRDS(imputedValues, "imputedValues.RDS")
 
-
+ 
 # try pmm with the lowest NA sample
 # flush environment
 # rm(list = ls())
