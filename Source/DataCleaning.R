@@ -27,10 +27,13 @@ trainData = trainData[,-1]
 
 # remove target column
 target = trainData[,ncol(trainData)]
+target = saveRDS(target, "data/target.rds")
 trainData = trainData[,-ncol(trainData)]
 
 # perform some initial manual analysis of data
 oneFactor = as.vector(which(sapply(apply(trainData, 2, unique), length) == 1)) #8 occurrences
+saveRDS(oneFactor, "data/REMOVE_oneFactor.rds")
+
 twoFactors = as.vector(which(sapply(apply(trainData, 2, unique), length) == 2)) #66 occurrences
 threeFactors = as.vector(which(sapply(apply(trainData, 2, unique), length) == 3)) #36 occurrences
 fourFactors = as.vector(which(sapply(apply(trainData, 2, unique), length) == 4)) #65 occurrences
@@ -281,6 +284,7 @@ indicesNegative = eliminateDuplicateCorrelationsMoreNAs(indicesNegative, numeric
 removeIndices = c(indices, indicesNegative)
 length(unique(removeIndices)) # 49
 removeIndices = unique(removeIndices)
+saveRDS(removeIndices, "data/REMOVE_1Cor.rds")
 # -> we can remove 49 attributes in total
 numericalData_lowestNA = numericalData_lowestNA[,-removeIndices]
 
@@ -298,7 +302,6 @@ correlationsSpearman = cor(numericalData_lowestNA,
                            use="pairwise.complete.obs", method = "spearman")
 correlationsSpearman[is.na(correlationsSpearman)] = 0
 saveRDS(correlationsSpearman, "data/spearman_without1.rds")
-write.csv2(correlationsSpearman, "correlationsSpearman.csv")
 length(which(correlationsSpearman == 1))
 
 #############################################
