@@ -55,7 +55,7 @@ spearman <- readRDS("data/spearman_without1.rds")
 
 set.seed(1234)
 s <- sample(1:dim(numericalDataSample)[1], 10000)
-df <- as.data.frame(numericalDataSample[s,]) #add other attribute sets(factors... here)
+df <- as.data.frame(numericalDataSample)[s,] #add other attribute sets(factors... here)
 spearman<- spearman[which(colnames(spearman) %in% colnames(df)),which(colnames(spearman) %in% colnames(df))] # to be sure to select only top correlations that are in current set
 
 miMatrix <- miCorMatrix(spearman, 5) # top 5 correlations
