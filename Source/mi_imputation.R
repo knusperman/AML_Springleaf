@@ -61,8 +61,9 @@ spearman<- spearman[which(colnames(spearman) %in% colnames(df)),which(colnames(s
 miMatrix <- miCorMatrix(spearman, 5) # top 5 correlations
 
 df_imputed <- df
-
-for(i in 1:5){
+#VAR_0031 error
+#VAR_0930 error
+for(i in 1:10){ #for cols 1-10
   imp <- createimputation(i)
   if(class(imp)=="data.frame"){
     df_imputed[rownames(imp), i] = imp[,1]
@@ -70,3 +71,8 @@ for(i in 1:5){
   
 }
 
+NAs <- apply(df, 2, function(x) sum(is.na(x)))
+NAratio <- sum(NAs)/sum(ncol(df)*nrow(df))
+
+afterImputationNAs <- apply(df_imputed, 2, function(x) sum(is.na(x)))
+afterImputationNAs <- afterImputationNAs[afterImputationNAs>0]
