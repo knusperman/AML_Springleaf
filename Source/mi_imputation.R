@@ -22,12 +22,12 @@ getMostCorCols <- function(colnum){
   which(miMatrix[,colnum]==1)
 }
 
-createimputation <- function(colnum){
+createimputation <- function(colnum, runParallelinside=TRUE){
   #takes the number of the column that is checked for imputation
   #if necessary a data frame is returned holding the imputed values. 
   colname = colnames(df)[colnum]
   print(paste("imputing:", colname, sep=" "))
-  if(sum(is.na(df[,colnum]))>0){
+  if(sum(is.na(df_imputed[,colnum]))>0){
     print("NAs detected. Starting imputation")
     impCols = getMostCorCols(colnum)
     if(0 < sum(length(impCols)+1 == apply(df[is.na(df[,colnum]),c(colnum,impCols)], 1, function(x) sum(is.na(x))))){
@@ -38,8 +38,8 @@ createimputation <- function(colnum){
         impCols = sample((1:dim(df)[2])[-colnum],size = 5) #choose new attributes and repeat if there is a all NA row again. 
       }
     }
-    result <- complete(mi(df[, c(colnum, impCols)],n.chains=1, n.iter=15),1)
-    result <- data.frame(row.names = rownames(result[unlist(result[paste("missing_",colname,sep="")]),]), result[unlist(result[paste("missing_",colname,sep="")]),1])
+    result <- complete(mi(df[, c(colnum, impCols)],n.chains=1, n.iter=15,parallel=runParallelinside),1)
+    result <- data.frame(row.names = row.names(df[is.na(df[,colnum]),]), result[unlist(result[paste("missing_",colname,sep="")]),1])
     colnames(result) = colname
     result
   }else{
@@ -50,29 +50,51 @@ createimputation <- function(colnum){
 
 
 ############################################################################################################
+#not on aws
 numericalDataSample <- readRDS("data/numericalAttributes_cleansed_withoutFactors.rds")
-spearman <- readRDS("data/spearman_without1.rds")
 
 set.seed(1234)
 s <- sample(1:dim(numericalDataSample)[1], 10000)
 df <- as.data.frame(numericalDataSample)[s,] #add other attribute sets(factors... here)
+#END not on aws
+############################################################################################################
+#on AWS
+df <- readRDS("data/newnum.rds")
+#END on AWS
+############################################################################################################
+
+for(i in 1:ncol(df)){
+  df[,i]= as.numeric(df[,i])
+}
+spearman <- readRDS("data/spearman_without1.rds")
 spearman<- spearman[which(colnames(spearman) %in% colnames(df)),which(colnames(spearman) %in% colnames(df))] # to be sure to select only top correlations that are in current set
-
 miMatrix <- miCorMatrix(spearman, 5) # top 5 correlations
-
 df_imputed <- df
+
 #VAR_0031 error
 #VAR_0930 error
-for(i in 1:10){ #for cols 1-10
+#VAR_1662, 1163
+#sequential FOR, parallel imputation
+for(i in 1400:ncol(df)){ #for cols 1-10
   imp <- createimputation(i)
   if(class(imp)=="data.frame"){
     df_imputed[rownames(imp), i] = imp[,1]
   }
   
 }
+#parallel FOR, sequential imputation
+library(doParallel)
+registerDoParallel(cores=2)
+foreach(i=1400:ncol(df)) %dopar% {
+  imp <- createimputation(i,runParallelinside = FALSE)
+  print("doing",i)
+  if(class(imp)=="data.frame"){
+    df_imputed[rownames(imp), i] = imp[,1]
+  }
+}
 
 NAs <- apply(df, 2, function(x) sum(is.na(x)))
 NAratio <- sum(NAs)/sum(ncol(df)*nrow(df))
 
-afterImputationNAs <- apply(df_imputed, 2, function(x) sum(is.na(x)))
+afterImputationNAs <- apply(df_imputed[,1000:ncol(df_imputed)], 2, function(x) sum(is.na(x)))
 afterImputationNAs <- afterImputationNAs[afterImputationNAs>0]
