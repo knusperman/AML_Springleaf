@@ -26,7 +26,7 @@ createimputation <- function(colnum, runParallelinside=TRUE){
   #takes the number of the column that is checked for imputation
   #if necessary a data frame is returned holding the imputed values. 
   colname = colnames(df)[colnum]
-  print(paste("imputing:", colname, sep=" "))
+  print(paste("imputing:", colname, "----",colnum, sep=" "))
   if(sum(is.na(df_imputed[,colnum]))>0){
     print("NAs detected. Starting imputation")
     impCols = getMostCorCols(colnum)
@@ -48,53 +48,3 @@ createimputation <- function(colnum, runParallelinside=TRUE){
   
 }
 
-
-############################################################################################################
-#not on aws
-numericalDataSample <- readRDS("data/numericalAttributes_cleansed_withoutFactors.rds")
-
-set.seed(1234)
-s <- sample(1:dim(numericalDataSample)[1], 10000)
-df <- as.data.frame(numericalDataSample)[s,] #add other attribute sets(factors... here)
-#END not on aws
-############################################################################################################
-#on AWS
-df <- readRDS("data/newnum.rds")
-#END on AWS
-############################################################################################################
-
-for(i in 1:ncol(df)){
-  df[,i]= as.numeric(df[,i])
-}
-spearman <- readRDS("data/spearman_without1.rds")
-spearman<- spearman[which(colnames(spearman) %in% colnames(df)),which(colnames(spearman) %in% colnames(df))] # to be sure to select only top correlations that are in current set
-miMatrix <- miCorMatrix(spearman, 5) # top 5 correlations
-df_imputed <- df
-
-#VAR_0031 error
-#VAR_0930 error
-#VAR_1662, 1163
-#sequential FOR, parallel imputation
-for(i in 1400:ncol(df)){ #for cols 1-10
-  imp <- createimputation(i)
-  if(class(imp)=="data.frame"){
-    df_imputed[rownames(imp), i] = imp[,1]
-  }
-  
-}
-#parallel FOR, sequential imputation
-library(doParallel)
-registerDoParallel(cores=2)
-foreach(i=1400:ncol(df)) %dopar% {
-  imp <- createimputation(i,runParallelinside = FALSE)
-  print("doing",i)
-  if(class(imp)=="data.frame"){
-    df_imputed[rownames(imp), i] = imp[,1]
-  }
-}
-
-NAs <- apply(df, 2, function(x) sum(is.na(x)))
-NAratio <- sum(NAs)/sum(ncol(df)*nrow(df))
-
-afterImputationNAs <- apply(df_imputed[,1000:ncol(df_imputed)], 2, function(x) sum(is.na(x)))
-afterImputationNAs <- afterImputationNAs[afterImputationNAs>0]
