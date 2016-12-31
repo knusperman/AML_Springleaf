@@ -18,9 +18,3 @@ colnames(mydata)[ncol(mydata)]="target"
 
 mydata$target <- as.factor(mydata$target)
 
-classif.task = makeClassifTask(id = "mtc", data = mydata, target = "target", positive="1")
-
-n = getTaskSize(classif.task) #size of data
-train.set = sample(n, size = n*0.8)
-test.set = 1:n
-test.set <- test.set[-which(test.set %in% train.set)]
