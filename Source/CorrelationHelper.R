@@ -39,7 +39,7 @@ buildMiceMatrix = function(correlation, usedAttributes = 5, naCor, naCorThreshol
   result = matrix(ncol = ncol(correlation), nrow = nrow(correlation))
   for (i in 1:ncol(correlation)) {
     ord = order(abs(correlation[,i]), decreasing = TRUE)
-    ord = ord[!(ord %in% (which(naCor > naCorThreshold)))]
+    ord = ord[!(ord %in% (which(naCor[,i] > naCorThreshold)))]
     ord = ord[1:usedAttributes]
     temp = seq(1, ncol(correlation), by = 1)
     temp = temp %in% ord

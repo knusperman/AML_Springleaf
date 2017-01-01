@@ -9,7 +9,9 @@ for (i in 1:ncol(dayData2)) {
 yearData = extractDateData(dateData, "y")
 hourData = extractDateData(as.data.frame(dateData[,15]), "h")
 target = as.numeric(readRDS("data/target.rds"))
-
+apply(dateData, 2, function(x) {
+  sum(is.na(x))/length(x)
+})
 
 buildDatePlots(monthData, target, path = "fig/months/month", month = TRUE)
 buildDatePlots(dayData2, target, path = "fig/days/day")
@@ -21,6 +23,14 @@ buildDatePlots(monthData, target, path = "fig/months/rel", month = TRUE, relativ
 buildDatePlots(dayData, target, path = "fig/days/rel", relative = TRUE)
 buildDatePlots(yearData, target, path = "fig/years/rel", relative = TRUE)
 buildDatePlots(hourData, target, path = "fig/hours/rel", relative = TRUE)
+
+# relevant dates are 
+# year 2 + 16
+# month 2 + 15 + 16
+# day 2 + 15 + 16
+
+relevantDateData = cbind(yearData[,2], yearData[,16], monthData[,2], monthData[,15], monthData[,16],
+                         dayData[,2], dayData[,15], dayData[,16])
 
 extractDateData = function(dateData, timeSpan) {
   if (!timeSpan %in% c("m", "y", "d", "h")) stop("timespan must be either m, y, d or h")
