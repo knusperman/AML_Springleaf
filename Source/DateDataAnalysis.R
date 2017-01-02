@@ -59,5 +59,7 @@ for (i in 1:ncol(otherDates)) {
 }
 relevantDateData = cbind(relevantDateData, otherDates)
 relevantDateData = as.data.frame(relevantDateData)
+colnames(relevantDateData) = c("VAR_0075_YEAR", "VAR_0217_YEAR", "VAR_0075_MONTH", "VAR_0204_MONTH", "VAR_0217_MONTH",
+                           "VAR_0075_DAY", "VAR_0204_DAY", "VAR_0217_DAY",colnames(dateData[,-c(2, 15, 16)]))
 saveRDS(relevantDateData, "data/dateData_FINAL.rds")
 
