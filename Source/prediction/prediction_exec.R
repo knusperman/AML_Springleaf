@@ -1,4 +1,7 @@
-if (!"xgboost" %in% installed.packages()) remove..packages("xgboost")
+if ("xgboost" %in% installed.packages()){
+  remove.packages("xgboost")
+  install_version("xgboost", version = "0.4-4", repos = "http://cran.us.r-project.org") #necessary to run with mlr
+}
 if (!"mlr" %in% installed.packages()) install.packages("mlr")
 if (!"e1071" %in% installed.packages()) install.packages("e1071")
 if (!"devtools" %in% installed.packages()) install.packages("devtools")
@@ -7,7 +10,6 @@ if(!"parallelMap" %in% installed.packages()) install.packages("parallelMap")
 library(mlr)
 library(parallelMap)
 library(devtools)
-install_version("xgboost", version = "0.4-4", repos = "http://cran.us.r-project.org") #necessary to run with mlr
 library(xgboost)
 library(e1071)
 library(ROCR)
@@ -30,15 +32,12 @@ classif.lrn.RF$par.set
 classif.lrn.RF= setHyperPars(classif.lrn.RF, ntree = 200)
 #get changed hyper parameters
 getHyperPars(classif.lrn.RF)
-#prob or response for classification
 
 mod.RF  = train(classif.lrn.RF, classif.task, subset = train.set)
 pred.RF  = predict(mod.RF, task = classif.task, subset = test.set)
 mlr::performance(pred.RF, auc)
 
-
-
-
+#see other files for xgb or svm
 
 #############################################################################
 #ROC Analysis

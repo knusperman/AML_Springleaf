@@ -1,3 +1,4 @@
+#needs prediction_exec code to run
 classif.lrn.XG = makeLearner("classif.xgboost", predict.type = "prob", fix.factors.prediction = TRUE)
 classif.lrn.XG$par.set
 classif.lrn.XG = setHyperPars(classif.lrn.XG, par.vals = list(nrounds=25,eval_metric="auc"))
@@ -20,7 +21,7 @@ rdesc = makeResampleDesc("CV", iters = 3L)
 ctrl =  makeTuneControlRandom(maxit = 10)
 # # 4) now use the learner on the training Task with the 3-fold CV to optimize your set of parameters and evaluate it with SQWK
 res = tuneParams(classif.lrn.XG, task = classif.task, resampling = rdesc, par.set = ps, control = ctrl)
-res
+#res
 # # 5) set the optimal hyperparameter
 classif.lrn.XG = setHyperPars(classif.lrn.XG, par.vals = res$x)
 

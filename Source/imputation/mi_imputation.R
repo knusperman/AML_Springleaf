@@ -49,14 +49,6 @@ createimputation <- function(colnum, runParallelinside=TRUE){
   if(sum(is.na(df_imputed[,colnum]))>0){
     print("NAs detected. Starting imputation")
     impCols = getMostCorCols(colnum)
-    #if(0 < sum(length(impCols)+1 == apply(df[is.na(df[,colnum]),c(colnum,impCols)], 1, function(x) sum(is.na(x))))){
-      #there is at least one row where all included attributes are NA. 
-      #randomly choose imputation vars
-     # print("All NA row detected. Sample imputation attributes. ")
-      #while(0 < sum(length(impCols)+1 == apply(df[is.na(df[,colnum]),c(colnum,impCols)], 1, function(x) sum(is.na(x))))){
-      #  impCols = sample((1:dim(df)[2])[-colnum],size = 5) #choose new attributes and repeat if there is a all NA row again. 
-      #}
-    #}
     result <- complete(mi(df[, c(colnum, impCols)],n.chains=1, n.iter=15,parallel=runParallelinside),1)
     result <- data.frame(row.names = row.names(df[is.na(df[,colnum]),]), result[unlist(result[paste("missing_",colname,sep="")]),1])
     colnames(result) = colname
