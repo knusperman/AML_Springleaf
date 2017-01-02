@@ -1,19 +1,22 @@
-if ("xgboost" %in% installed.packages()){
-  remove.packages("xgboost")
-  install_version("xgboost", version = "0.4-4", repos = "http://cran.us.r-project.org") #necessary to run with mlr
-}
+
 if (!"mlr" %in% installed.packages()) install.packages("mlr")
 if (!"e1071" %in% installed.packages()) install.packages("e1071")
 if (!"devtools" %in% installed.packages()) install.packages("devtools")
 if (!"ROCR" %in% installed.packages()) install.packages("ROCR")
 if(!"parallelMap" %in% installed.packages()) install.packages("parallelMap")
-library(mlr)
-library(parallelMap)
-library(devtools)
-library(xgboost)
-library(e1071)
-library(ROCR)
+if ("xgboost" %in% installed.packages() & packageVersion("xgboost")!="0.4.4"){
+  remove.packages("xgboost")
+  install_version("xgboost", version = "0.4-4", repos = "http://cran.us.r-project.org") #necessary to run with mlr
+}else if(!"xgboost" %in% installed.packages()){
+  install_version("xgboost", version = "0.4-4", repos = "http://cran.us.r-project.org") #necessary to run with mlr
+}
 
+library(xgboost)
+library(mlr)
+library(e1071)
+library(devtools)
+library(ROCR)
+library(parallelMap)
 
 classif.task = makeClassifTask(id = "mtc", data = mydata, target = "target", positive="1")
 
