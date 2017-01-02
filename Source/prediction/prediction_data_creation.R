@@ -9,19 +9,19 @@ data_strings = as.data.frame(readRDS("data/final/stringData_FINAL.rds"))[s,]
 data_dates   = as.data.frame(readRDS("data/final/dateData_FINAL.rds"))[s,] #f
 data_target  = as.data.frame(read.csv("data/target.csv"))[s,] #f #full train records
 
-#some data for selecting the right columns for predicting
-cols_numeric = colnames(data_numeric)
-cols_factors = colnames(data_factors)
-cols_strings = colnames(data_strings)
-cols_dates = colnames(data_dates)
+
+#collist = list("cols_numeric"=colnames(data_numeric),"cols_factors"=colnames(data_factors),"cols_strings" = colnames(data_strings), "cols_dates" = colnames(data_dates))
+#saveRDS(collist, "data/collist.rds")
+
 NAstatistics <- readRDS("data/NAstatistics.rds") #since data has no more information about amout of imputation in a column
+collist <- readRDS("data/collist.rds") #some data for selecting the right columns for predicting
 
 mydata <- cbind(data_numeric,data_factors,data_strings,data_dates,data_target)
 colnames(mydata)[ncol(mydata)]="target"
 mydata$target <- as.factor(mydata$target)
 
 dim(mydata)
-
+#cleaning the environment
 remove(data_numeric)
 remove(data_factors)
 remove(data_strings)
