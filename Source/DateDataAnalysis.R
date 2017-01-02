@@ -1,9 +1,10 @@
+source("source/DateFunctions.R")
+
 dateData = readRDS("data/dateAttributes_cleansed.rds")
 monthData = extractDateData(dateData, "m")
 dayData = extractDateData(dateData, "d")
-dayData2 = dayData
-for (i in 1:ncol(dayData2)) {
-  dayData2[,i] = factor(dayData2[,i], levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
+for (i in 1:ncol(dayData)) {
+  dayData[,i] = factor(dayData[,i], levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
                                                "Saturday", "Sunday"))
 }
 yearData = extractDateData(dateData, "y")
@@ -24,75 +25,39 @@ buildDatePlots(dayData, target, path = "fig/days/rel", relative = TRUE)
 buildDatePlots(yearData, target, path = "fig/years/rel", relative = TRUE)
 buildDatePlots(hourData, target, path = "fig/hours/rel", relative = TRUE)
 
-# relevant dates are 
-# year 2 + 16
+# relevant dates are (because the others have very high NA values)
+# year 2 + 16 (not year of 15 because there is only one year)
 # month 2 + 15 + 16
 # day 2 + 15 + 16
 
 relevantDateData = cbind(yearData[,2], yearData[,16], monthData[,2], monthData[,15], monthData[,16],
                          dayData[,2], dayData[,15], dayData[,16])
 
-extractDateData = function(dateData, timeSpan) {
-  if (!timeSpan %in% c("m", "y", "d", "h")) stop("timespan must be either m, y, d or h")
-  result = dateData
-  for (i in 1:ncol(dateData)) {
-    
-    # somehow needed as else invalid factor levels are produced
-    if (timeSpan == "h") result[,i] = as.numeric(result[,i])
-    for (j in 1:nrow(dateData)) {
-      if (timeSpan == "m") result[j,i] = format(as.Date(dateData[j,i], format = "%d%B%y:%H:%M:%S"),'%B')
-      if (timeSpan == "y") result[j,i] = format(as.Date(dateData[j,i], format = "%d%B%y:%H:%M:%S"),'%y')
-      if (timeSpan == "d") result[j,i] = weekdays(as.Date(dateData[j,i], format = "%d%B%y:%H:%M:%S"))
-      if (timeSpan == "h") result[j,i] = substr(format(as.Date(dateData[j,i], format = "%d%B%y:%H:%M:%S"),'%r'),1,2)
-    }
-  } 
-  return(result)
-}
+# convert all other attributes into TRUE/FALSE (FALSE if NA)
+# plot the difference regarding target between NAs and non-NAs as reasoning
+otherDates = dateData[,-c(2, 15, 16)]
+nonNAtargetPercentage = apply(otherDates, 2, function(x) {
+  sum(target[!is.na(x)])/length(target[!is.na(x)])
+})
+avgTarget = sum(target)/length(target)
+plotData = as.data.frame(cbind(id = seq_along(nonNAtargetPercentage), percentage = nonNAtargetPercentage, avg = rep(avgTarget, length(nonNAtargetPercentage))))
 
-weekdays(as.Date(dateData[2,1], format = "%d%B%y:%H:%M:%S"))
+png("fig/nonNADate_vsTarget.png", height = 800, width = 800)
+ggplot(data = plotData, aes(x = id, y = percentage)) + 
+  geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of occurrences") + theme_bw() +
+  geom_line(data = plotData, aes(x = id, y = avg, group = 1), colour = "red", size = 4) + 
+  theme(axis.text = element_text(size = 40, colour = "black", angle = 45, hjust = 1), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm"))
+dev.off()
 
-# builds plots of given date data with the target as a red line
-# if relative = TRUE it only plots the target per month as a % value
-buildDatePlots = function(data, target, path, relative = FALSE, month = FALSE) {
-  for (i in 1:ncol(data)) {
-    numbers = as.data.frame(table(data[,i]))
-    # sort according to calendar if months are given
-    if (month) numbers = numbers[c(5,4,8,1,9,7,6,2,12,11,10,3),]
-    responseRate = numeric(nrow(numbers))
-    for (j in 1:nrow(numbers)) {
-      targets = target[which(data[,i] == numbers[j,1])]
-      responseRate[j] = sum(as.numeric(targets))
-    }
-    plotData = data.frame(cbind(id = as.character(numbers[,1]), occurrences = numbers[,2], 
-                                   responseRate = responseRate), stringsAsFactors = FALSE)
-    plotData[,1] = factor(plotData[,1], levels = unique(plotData[,1]))
-    plotData[,2] = as.numeric(plotData[,2])
-    plotData[,3] = as.numeric(plotData[,3])
-    if (!relative) makeDatePlot(plotData, path = paste(path, i, ".png", sep = ""))
-    else makeRelativeDatePlot(plotData, path = paste(path, i, ".png", sep = ""))
-  }
-}
 
-# requires as input a dataframe plotData with columns named id, occurrences and responseRate
-makeDatePlot = function(plotData, path) {
-  png(path, height = 800, width = 800)
-  p = ggplot(data = plotData, aes(x = id, y = occurrences)) + 
-    geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of occurrences") + theme_bw() +
-    geom_line(data = plotData, aes(x = id, y = responseRate, group = 1), colour = "red", size = 4) + 
-    theme(axis.text = element_text(size = 40, colour = "black", angle = 45, hjust = 1), 
-          axis.title = element_text(size = 40, colour = "black")) +
-    theme(plot.margin = unit(c(1,2,1,1), "cm"))
-  print(p)
-  dev.off()
+# apparently the difference between NAs and non-NAs is huge
+for (i in 1:ncol(otherDates)) {
+  otherDates[is.na(otherDates[,i]),i] = FALSE
+  otherDates[!otherDates[,i] == FALSE,i] = TRUE
 }
+relevantDateData = cbind(relevantDateData, otherDates)
+relevantDateData = as.data.frame(relevantDateData)
+saveRDS(relevantDateData, "data/dateData_FINAL.rds")
 
-makeRelativeDatePlot = function(plotData, path) {
-  png(path, height = 800, width = 800)
-  p = ggplot(data = plotData, aes(x = id, y = (responseRate/occurrences))) + 
-    geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of occurrences") + theme_bw() +
-    theme(axis.text = element_text(size = 40, colour = "black", angle = 45, hjust = 1), 
-          axis.title = element_text(size = 40, colour = "black")) +
-    theme(plot.margin = unit(c(1,2,1,1), "cm"))
-  print(p)
-  dev.off()
-}
