@@ -14,3 +14,17 @@ which(sapply(n3, function(x)sum(is.na(x)))>0)
 df_imputed[rownames(n3),] ->n3i
 saveRDS(n3i, "data/numeric imputations/imp40-50k.rds")
 
+
+
+# put into this file because im lazy
+
+pcaRes = princomp(train_imputed[complete.cases(train_imputed),])
+plotData = as.data.frame(cbind(id = seq_along(pcaRes$sdev), sdev = pcaRes$sdev))
+png("fig/pcaSdev.png", height = 800, width = 800)
+ggplot(data = plotData, aes(x = id, y = sdev)) + 
+  geom_line() + xlab("Attributes") + ylab("Standard deviation") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black", angle = 45, hjust = 1), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm"))
+dev.off()
