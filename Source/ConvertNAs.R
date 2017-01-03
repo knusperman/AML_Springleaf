@@ -138,15 +138,22 @@ dev.off()
 # now that we got (most) NAs converted, we might follow another sampling approach:
 # get samples with the lowest NA percentage
 # for this, we need to find out, if the number of NAs impacts the target
-naRows = apply(trainData, 1, is.na)
-naRows = apply(naRows, 2, sum)
+trainData = readRDS("data/check2.rds")
+target = as.numeric(readRDS("data/target.rds"))
+naRows = apply(trainData, 1, function(x) {
+  sum(is.na(x))})
 orderIndices = order(naRows)
 lm(target ~ naRows) # not very high coefficient
 sum(target)/length(target) # 0.2325468 target values of 1
 # compare the 10000 lowest NA entries with the 10000 highest NA entries and the avg
-sum(target[orderIndices[1:10000]])/10000 # 0.3265
+sum(target[orderIndices[1:10000]])/10000 # 0.1774
 sum(target[orderIndices[(length(orderIndices)-9999): length(orderIndices)-9999]]) /
-  10000 # 0.2253
+  10000 # 0.2842
+
+lowNA = trainData[orderIndices[1:10000],]
+sum(is.na(lowNA)) # 2497846
+higherNA = trainData[orderIndices[10001:20000],]
+sum(is.na(higherNA)) # 2876050
 
 # plot for visualization
 breaks = seq(1, length(orderIndices), length.out = 11)
