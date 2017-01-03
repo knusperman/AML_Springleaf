@@ -3,19 +3,19 @@ library(mi)
 
 #miCorMatrix = function(correlation, usedAttributes = 100) {
   #based on buildMiceMatrix to get top x correlations of the attributes in a square matrix
-  diag(correlation) = 0
-  result = matrix(ncol = ncol(correlation), nrow = nrow(correlation))
-  for (i in 1:ncol(correlation)) {
-    cors = order(abs(correlation[,i]), decreasing = TRUE)[1:usedAttributes]
-    temp = seq(1, ncol(correlation), by = 1)
-    temp = temp %in% cors
-    temp[temp == TRUE] = 1
-    temp[temp == FALSE] = 0
-    result[,i] = temp
-  }
-  diag(result) = 0
-  return(result)
-}
+#  diag(correlation) = 0
+#  result = matrix(ncol = ncol(correlation), nrow = nrow(correlation))
+#  for (i in 1:ncol(correlation)) {
+#    cors = order(abs(correlation[,i]), decreasing = TRUE)[1:usedAttributes]
+#    temp = seq(1, ncol(correlation), by = 1)
+#    temp = temp %in% cors
+#    temp[temp == TRUE] = 1
+#    temp[temp == FALSE] = 0
+#    result[,i] = temp
+#  }
+#  diag(result) = 0
+#  return(result)
+#}
 buildMiceMatrix = function(correlation, usedAttributes = 5, naCor, naCorThreshold) {
   diag(correlation) = 0
   diag(naCor)= 0
@@ -41,7 +41,7 @@ getMissingnesPatternCorMat <- function(data ){
   cor(is.na(data),use="everything",method="pearson")
 }
 
-createimputation <- function(colnum, runParallelinside=TRUE){
+createimputation <- function(df, df_imputed, colnum, runParallelinside=TRUE){
   #takes the number of the column that is checked for imputation
   #if necessary a data frame is returned holding the imputed values. 
   colname = colnames(df)[colnum]

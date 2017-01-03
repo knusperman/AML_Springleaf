@@ -39,7 +39,7 @@ seq = 1:ncol(df)
 exclude =c(208,209,210,716)
 ###### adjust i up to ncol(df) on all computing devices. 
 for(i in seq[-exclude]){ 
-  imp <- createimputation(i)
+  imp <- createimputation(df, df_imputed, i)
   if(class(imp)=="data.frame"){
     df_imputed[rownames(imp), i] = imp[,1]
   }
