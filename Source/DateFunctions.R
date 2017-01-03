@@ -46,7 +46,7 @@ makeDatePlot = function(plotData, path) {
     geom_line(data = plotData, aes(x = id, y = responseRate, group = 1), colour = "red", size = 4) + 
     theme(axis.text = element_text(size = 40, colour = "black", angle = 45, hjust = 1), 
           axis.title = element_text(size = 40, colour = "black")) +
-    theme(plot.margin = unit(c(1,2,1,1), "cm"))
+    theme(plot.margin = unit(c(1,2,1,1), "cm")) + scale_x_discrete("", levels(plotData$id))
   print(p)
   dev.off()
 }
@@ -54,10 +54,10 @@ makeDatePlot = function(plotData, path) {
 makeRelativeDatePlot = function(plotData, path) {
   png(path, height = 800, width = 800)
   p = ggplot(data = plotData, aes(x = id, y = (responseRate/occurrences))) + 
-    geom_bar(stat = "identity") + xlab("Attributes") + ylab("Number of occurrences") + theme_bw() +
+    geom_bar(stat = "identity") + xlab("Attributes") + ylab("Target response rate") + theme_bw() +
     theme(axis.text = element_text(size = 40, colour = "black", angle = 45, hjust = 1), 
           axis.title = element_text(size = 40, colour = "black")) +
-    theme(plot.margin = unit(c(1,2,1,1), "cm"))
+    theme(plot.margin = unit(c(1,2,1,1), "cm")) + scale_x_discrete("", levels(plotData$id))
   print(p)
   dev.off()
 }

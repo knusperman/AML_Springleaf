@@ -2,7 +2,7 @@ source("source/DateFunctions.R")
 
 dateData = readRDS("data/dateAttributes_cleansed.rds")
 monthData = extractDateData(dateData, "m")
-dayData = extractDateData(dateData, "d")
+dayData = as.data.frame(extractDateData(dateData, "d"))
 for (i in 1:ncol(dayData)) {
   dayData[,i] = factor(dayData[,i], levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
                                                "Saturday", "Sunday"))
@@ -15,7 +15,7 @@ apply(dateData, 2, function(x) {
 })
 
 buildDatePlots(monthData, target, path = "fig/months/month", month = TRUE)
-buildDatePlots(dayData2, target, path = "fig/days/day")
+buildDatePlots(dayData, target, path = "fig/days/day")
 buildDatePlots(yearData, target, path = "fig/years/year")
 buildDatePlots(hourData, target, path = "fig/hours/hour")
 
