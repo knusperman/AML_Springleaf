@@ -1,9 +1,4 @@
 
-#merge data sets and get 20k sample from numeric imputed data. 
-set.seed(1234)
-s <- sample(1:145232, 145231)
-s <- sample(1:145231, 145231)[10001:30000]#sampling from complete training data for numeric data sample
-
 #numericalDataSample <- readRDS("data/numericalAttributes_cleansed_withoutFactors.rds")
 #numericalDataSample <- as.data.frame(numericalDataSample)
 data_numeric = as.data.frame(readRDS("data/final/numeric20k_predictionsample.rds"))
