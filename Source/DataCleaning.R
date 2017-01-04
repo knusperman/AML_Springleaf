@@ -97,6 +97,11 @@ numericalColumns = !(stringColumns | booleanColumns | dateColumns)
 sum(numericalColumns) #1874
 saveRDS(cbind(booleanColumns, dateColumns, stringColumns, numericalColumns), 
         "attributes1.rds")
+# attributes = readRDS("data/attributes1.rds")
+# booleanColumns = attributes[,1]
+# dateColumns = attributes[,2]
+# stringColumns = attributes[,3]
+# numericalColumns = attributes[,4]
 
 # convert datatypes
 # convert to logical in trainData
@@ -290,7 +295,7 @@ numericalData_lowestNA = numericalData_lowestNA[,-removeIndices]
 
 numericalData = numericalData[,-removeIndices]
 saveRDS(numericalData, "data/numericalData_withoutCor1.rds")
-numericalData = readRDS("data/numericalData_withoutCor1.rds")
+# numericalData = readRDS("data/numericalData_withoutCor1.rds")
 
 numericalData_lowestNA = readRDS("data/numericalData_sampleLowestNA.rds")
 numericalData_lowestNA = numericalData_lowestNA[,-removeIndices]
