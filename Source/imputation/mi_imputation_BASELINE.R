@@ -1,3 +1,7 @@
+# the baseline dataset serves as a comparison of our sophisticated cleaning methods vs. 
+# no cleaning at all
+# We assume that our cleaned dataset significantly outperforms the uncleaned dataset
+
 trainData = readRDS("data/check1.rds")
 set.seed(1234)
 factors = readRDS("data/factorPotentials.rds")
@@ -56,3 +60,13 @@ for (i in 1:ncol(numericalData_imputed)) {
 }
 
 saveRDS(numericalData_imputed, "data/baseline_numericalAndFactor.rds")
+# numericalData_imputed = readRDS("data/baseline_numericalAndFactor.rds")
+
+# build entire baseline dataset
+trainData = readRDS("data/check1.rds")
+trainData = trainData[,-1]
+target = trainData[,ncol(trainData)]
+trainData = trainData[,-ncol(trainData)]
+dataset = as.data.frame(cbind(numericalData_imputed, 
+                        trainData[,!colnames(trainData) %in% colnames(numericalData_imputed)], target = target))
+saveRDS(dataset, "data/final/baselineDataset.rds")
