@@ -96,7 +96,7 @@ sum(stringColumns) #50
 numericalColumns = !(stringColumns | booleanColumns | dateColumns) 
 sum(numericalColumns) #1874
 saveRDS(cbind(booleanColumns, dateColumns, stringColumns, numericalColumns), 
-        "attributes1.rds")
+        "data/attributes1.rds")
 # attributes = readRDS("data/attributes1.rds")
 # booleanColumns = attributes[,1]
 # dateColumns = attributes[,2]
@@ -163,6 +163,9 @@ sum(numericalColumns) # 1824
 sum(booleanColumns) # 67
 sum(dateColumns) # 16
 sum(stringColumns) # 17
+saveRDS(cbind(booleanColumns, dateColumns, stringColumns, numericalColumns), 
+        "data/attributes2.rds")
+
 
 saveRDS(trainData[,booleanColumns], "data/booleanAttributes_cleansed.rds")
 saveRDS(trainData[,dateColumns], "data/dateAttributes_cleansed.rds")
@@ -325,11 +328,11 @@ sum(is.na(numericalData)) / (ncol(numericalData) * nrow(numericalData)) # 0.2266
 factorData = apply(factorData, 2, as.numeric) # somehow not all columns are saved as numeric
 # -> much lower NA percentage in factor data
 # encode factor NAs simply as highest factor level + 1
-factorData = apply(factorData, 2, function(x) {
-  maximum = max(na.omit(x))
-  x[is.na(x)] = maximum + 1
-  x = as.factor(x)
-})
+for (i in 1:ncol(factorData)) {
+  maximum = max(na.omit(factorData[,i]))
+  factorData[is.na(factorData[,i]),i] = maximum + 1
+  factorData[,i] = factor(factorData[,i], levels = unique(factorData[,i]))
+}
 sum(is.na(factorData)) / (ncol(factorData) * nrow(factorData)) # 0
 numericalData = numericalData[,-factorColumns]
 numericalData_lowestNA = numericalData_lowestNA[,-factorColumns]
@@ -356,46 +359,3 @@ createCorrelationPlots(correlations, "_pearsonNoFactors")
 #############################################
 # END HANDLING OF FACTORS
 #############################################
-
-# impute values for PCA analysis
-# pmm does not work (system is computationally singular)
-# according to the MICE paper: study last eigenvector of covmat, variables with high values there
-# often cause the singularity problem
-# this still does not work for our data
-# other approach (to also speed up the imputation: only use the 100 attributes to impute values
-# for one attribute with the highest correlation)
-# use spearman
-# build usage matrix for mice
-# numericalData_lowestNA = readRDS("data/numericalData_sampleLowestNA.rds")
-# correlationsSpearman = readRDS("data/spearman_without1.rds")
-# numericalData_noCor1 = readRDS("data/numericalData_withoutCor1.rds")
-# compute pearson for miceMatrix
-
-miceMatrix = buildMiceMatrix(correlations, usedAttributes = 10)
-numberOfObs = 1000
-imputedValues = mice(numericalData[1:numberOfObs,], predictorMatrix = miceMatrix, method = "fastpmm")
-# system is computationally singular
-# try to impute numerical values with factor attributes
-predictorMatrix = matrix(ncol = (ncol(numericalData) + ncol(factorData)), 
-                         nrow = ncol(numericalData) + ncol(factorData))
-for (i in 1:ncol(numericalData)) {
-  predictorMatrix[i,] = c(rep(0, ncol(numericalData)), rep(1, ncol(factorData)))
-} 
-for (i in (ncol(numericalData)+1):(ncol(numericalData)+ncol(factorData))) {
-  predictorMatrix[i,] = c(rep(1, ncol(numericalData)), rep(0, ncol(factorData)))
-}
-imputedValues = mice(cbind(numericalData[1:numberOfObs,], factorData[1:numberOfObs,]), 
-                     predictorMatrix = predictorMatrix, method = "fastpmm")
-
-
-# mice takes ridiculously long
-imputedValues = missForest(numericalData)
-
-saveRDS(imputedValues, "imputedValues.RDS")
-
- 
-# try pmm with the lowest NA sample
-# flush environment
-# rm(list = ls())
-
-pca = princomp(imputedValues) 
