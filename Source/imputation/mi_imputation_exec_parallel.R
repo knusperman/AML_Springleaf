@@ -24,7 +24,7 @@ saveRDS(df2,"data/numeric imputations/impsplit2.rds")
 saveRDS(df3,"data/numeric imputations/impsplit3.rds")
 #############################################################################
 #############################################################################
-source("Source/imputation/mi_imputation.R")
+source("Source/imputation/mi_imputation.r")
 df <- readRDS("data/numeric imputations/impsplit1.rds")
 naCorMat <- getMissingnesPatternCorMat(df)
 
@@ -37,11 +37,7 @@ colnames(miNACorMat) = colnames(df)
 miMatrix <- miNACorMat
 #miMatrix <- miCorMatrix(spearman, 5) # top 5 correlations
 df_imputed <- df
-seq = 1:ncol(df)
-seq = 1:8
-remove(miNACorMat)
-remove(spearman)
-remove(naCorMat)
+seq = 1:ncol(df_imputed)
 
 if (!"snow" %in% installed.packages()) install.packages("snow")
 library(snow)
@@ -53,7 +49,7 @@ snow::clusterCall(cl, function() library(mi))
 ex = ls(.GlobalEnv)
 snow::clusterExport(cl, ex)
 res = snow::clusterApply(cl = cl, x = seq, fun = function(x) {
-  imputeWrapper(df_imputed, x, miMatrix)
+  res = tryCatch(imputeWrapper(df_imputed, x, miMatrix))
 })
 snow::stopCluster(cl)
 
