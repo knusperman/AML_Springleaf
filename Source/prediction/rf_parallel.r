@@ -2,8 +2,12 @@
 classif.lrn.RF = makeLearner("classif.randomForest", predict.type = "prob", fix.factors.prediction = TRUE)
 
 classif.lrn.RF$par.set
-classif.lrn.RF= setHyperPars(classif.lrn.RF, ntree = 2)
+classif.lrn.RF= setHyperPars(classif.lrn.RF, ntree = 150) #forest size = ntree * cores
 
+############################
+cores = 2
+cluster = makeCluster(cores, type="SOCK")
+############################
 getHyperPars(classif.lrn.RF) #get changed hyper parameters
 ############################################################################################################
 ###################################### PARAMETER OPTIMIZATION###############################################
@@ -28,13 +32,15 @@ result
 ############################################################################################################
 
 registerDoSNOW(cluster)
-mods = foreach(i=1:2,.inorder=FALSE,.packages="mlr") %dopar% {
+mods = foreach(i=1:cores,.inorder=FALSE,.packages="mlr") %dopar% {
   train(classif.lrn.RF, classif.task, subset = train.set)
 }
 stopCluster(cluster)
-
-mod.RF$learner.model = combine(mods[[1]]$learner.model,mods[[2]]$learner.model)
-remove(mods)
+mod.RF = mods[[1]]
+for(i in 2:cores){
+  mod.RF$learner.model = combine(mod.RF$learner.model,mods[[i]]$learner.model)
+}
+#remove(mods)
 ############################################################################################################
 ############################################################################################################
 ############################################################################################################
