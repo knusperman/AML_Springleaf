@@ -4,9 +4,12 @@ if (!"e1071" %in% installed.packages()) install.packages("e1071")
 if (!"devtools" %in% installed.packages()) install.packages("devtools")
 if (!"ROCR" %in% installed.packages()) install.packages("ROCR")
 if(!"parallelMap" %in% installed.packages()) install.packages("parallelMap")
-if ("xgboost" %in% installed.packages() & packageVersion("xgboost")!="0.4.4"){
-  remove.packages("xgboost")
-  install_version("xgboost", version = "0.4-4", repos = "http://cran.us.r-project.org") #necessary to run with mlr
+library(devtools)
+if ("xgboost" %in% installed.packages()){
+  if(packageVersion("xgboost")!="0.4.4"){
+    remove.packages("xgboost")
+    install_version("xgboost", version = "0.4-4", repos = "http://cran.us.r-project.org") #necessary to run with mlr
+  }
 }else if(!"xgboost" %in% installed.packages()){
   install_version("xgboost", version = "0.4-4", repos = "http://cran.us.r-project.org") #necessary to run with mlr
 }
@@ -14,17 +17,16 @@ if ("xgboost" %in% installed.packages() & packageVersion("xgboost")!="0.4.4"){
 library(xgboost)
 library(mlr)
 library(e1071)
-library(devtools)
 library(ROCR)
 library(parallelMap)
 
-classif.task = makeClassifTask(id = "mtc", data = mydata, target = "target", positive="1")
+classif.task = makeClassifTask(id = "mtc", data = mydata, target = "target", positive="1",)
 
 n = getTaskSize(classif.task) #size of data
-train.set = sample(n, size = n*0.8)
+train.set = sample(n, size = n*0.9)
 test.set = 1:n
 test.set <- test.set[-which(test.set %in% train.set)]
-
+######################
 classif.lrn.RF = makeLearner("classif.randomForest", predict.type = "prob", fix.factors.prediction = TRUE)
 #Occasionally, factor features may cause problems when fewer levels are present in the test data set than in the training data. 
 #By setting fix.factors.prediction = TRUE these are avoided by adding a factor level for missing data in the test data set.
