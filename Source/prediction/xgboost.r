@@ -1,7 +1,7 @@
 #needs prediction_exec code to run
 classif.lrn.XG = makeLearner("classif.xgboost", predict.type = "prob", fix.factors.prediction = TRUE)
 classif.lrn.XG$par.set
-classif.lrn.XG = setHyperPars(classif.lrn.XG, par.vals = list(nrounds=40,eval_metric="auc",eta = 0.15,max_depth=4,nthread=16,colsample_bytree=0.51,subsample=0.838))
+classif.lrn.XG = setHyperPars(classif.lrn.XG, par.vals = list(nrounds=65,eval_metric="auc",eta = 0.128,max_depth=6,colsample_bytree=0.653,subsample=0.816))
   getHyperPars(classif.lrn.XG)
 
 ###https://www.kaggle.com/casalicchio/prudential-life-insurance-assessment/use-the-mlr-package-scores-0-649/run/139876
@@ -10,6 +10,7 @@ parallelStartSocket(2)
 # # 1) Define the set of parameters you want to tune (here 'eta')
 ps = makeParamSet(
   makeNumericParam("eta", lower = 0.1, upper = 0.7),
+  makeNumericParam("max_depth", lower = 2, upper = 14, trafo=function(x) round(x,0)),
   makeNumericParam("colsample_bytree", lower = 1, upper = 2, trafo = function(x) x/2),
   makeNumericParam("subsample", lower = 1, upper = 2, trafo = function(x) x/2)
 )
