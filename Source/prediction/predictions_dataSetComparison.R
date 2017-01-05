@@ -36,4 +36,5 @@ pred = predict(model, newdata = baseline[samp[20001:30000],])
 pred$data = pred$data[!is.na(pred$data$response),]
 perf = generateThreshVsPerfData(pred, measures = list(fpr, tpr, mmce))
 
-p = getPlotAUC(pred)
+p = getPlotAUC(list(baseline = pred))
+p2 = addLinesToAUCPlot(p2, pred, 2)
