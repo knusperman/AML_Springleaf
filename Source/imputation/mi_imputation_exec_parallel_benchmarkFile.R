@@ -44,6 +44,11 @@ remove(naCorMat)
 
 if (!"snow" %in% installed.packages()) install.packages("snow")
 library(snow)
+
+# do some benchmarking of parallel version
+
+seq = 1:8
+time1 = Sys.time()
 nCores = parallel::detectCores()
 cl = makeCluster(nCores, type = "SOCK")
 snow::clusterCall(cl, function() library(mi))
@@ -54,15 +59,78 @@ snow::clusterExport(cl, ex)
 res = snow::clusterApply(cl = cl, x = seq, fun = function(x) {
   imputeWrapper(df_imputed, x, miMatrix)
 })
+diff1 = Sys.time() - time1
 snow::stopCluster(cl)
 
-naCols = which(apply(df, 2, function(x) {
-  sum(is.na(x)) > 0
-}))
+seq = 1:16
+time2 = Sys.time()
+nCores = parallel::detectCores()
+cl = makeCluster(nCores, type = "SOCK")
+snow::clusterCall(cl, function() library(mi))
 
-for (i in 1:length(naCols)) {
-  df_imputed[is.na(df_imputed[,naCols[i]]),naCols[i]] = res[[i]]
+# export currently loaded environment
+ex = ls(.GlobalEnv)
+snow::clusterExport(cl, ex)
+res = snow::clusterApply(cl = cl, x = seq, fun = function(x) {
+  imputeWrapper(df_imputed, x, miMatrix)
+})
+diff2 = Sys.time() - time2
+snow::stopCluster(cl)
+
+seq = 1:32
+time3 = Sys.time()
+nCores = parallel::detectCores()
+cl = makeCluster(nCores, type = "SOCK")
+snow::clusterCall(cl, function() library(mi))
+
+# export currently loaded environment
+ex = ls(.GlobalEnv)
+snow::clusterExport(cl, ex)
+res = snow::clusterApply(cl = cl, x = seq, fun = function(x) {
+  imputeWrapper(df_imputed, x, miMatrix)
+})
+diff3 = Sys.time() - time3
+snow::stopCluster(cl)
+
+# do some benchmarking of sequential version
+
+seq = 1:8
+time4 = Sys.time()
+for(i in seq){ 
+  imp <- createimputation(df, df_imputed, i)
+  if(class(imp)=="data.frame"){
+    df_imputed[rownames(imp), i] = imp[,1]
+  }
 }
+diff4 = Sys.time() - time4
+
+df_imputed = df
+
+seq = 1:16
+time5 = Sys.time()
+for(i in seq){ 
+  imp <- createimputation(df, df_imputed, i)
+  if(class(imp)=="data.frame"){
+    df_imputed[rownames(imp), i] = imp[,1]
+  }
+}
+diff5 = Sys.time() - time5
+
+df_imputed = df
+
+seq = 1:32
+time6 = Sys.time()
+for(i in seq){ 
+  imp <- createimputation(df, df_imputed, i)
+  if(class(imp)=="data.frame"){
+    df_imputed[rownames(imp), i] = imp[,1]
+  }
+}
+diff6 = Sys.time() - time6
+
+df_imputed = df
+
+
 
 imputeWrapper = function(dataframe, colnum, miMatrix) {
   impCols = which(miMatrix[,colnum]==1)
@@ -72,7 +140,6 @@ imputeWrapper = function(dataframe, colnum, miMatrix) {
   if(sum(is.na(df_imputed[,colnum])) > 0) {
     result = complete(mi(impDF,n.chains=1, n.iter=15,parallel=FALSE),1)
     result = data.frame(row.names = row.names(impDF[,1]), res = result[unlist(result[paste("missing_",colname,sep="")]),1])
-    colnames(result) = colnames(impDF[,1])
     gc() # collect some garbage
     return(result)
   }
