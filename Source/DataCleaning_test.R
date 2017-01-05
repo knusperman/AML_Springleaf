@@ -1,20 +1,18 @@
 # this is essentially a trimmed version of DataCleaning.R, including elements of DateDataAnalysis, StringDataAnalysis and BooleanDataAnalysis
 # for brevity, these cleaning procedures are not split into differente files again
 # since the test set has to be cleaned in the same way to ensure consistency, mostly code is repeated here
-testData = as.data.frame(read.csv("data/test.csv", stringsAsFactors = FALSE, strip.white = TRUE))
+testData = as.data.frame(readcsv("data/test.csv", stringsAsFactors = FALSE, strip.white = TRUE))
 for (i in 1:ncol(testData)) {
   testData[,i] = gsub(" ", "", testData[,i])
 }
 testData = testData[,-1]
-testTarget = testData[,ncol(testData)]
-testData = testData[,-ncol(testData)]
 removeOneFactor = readRDS("data/REMOVE_oneFactor.rds")
-testData = testData[,-oneFactor]
+testData = testData[,-removeOneFactor]
 naEncodings = c(-99999, 1e+09, 99, 9999, 100, 9996, 9998, 98, 
                 999999999, 999999998, 999999997, 999999996, 999999995, 999999994)
 source("source/ConvertNAs_Functions.R")
 testData = convertNAsFaster(testData, naEncodings)
-saveRDS("data/testBackup1.rds")
+saveRDS(testData,"data/testBackup1.rds")
 
 attributes = readRDS("data/attributes2.rds")
 booleanColumns = attributes[,1]
@@ -35,15 +33,18 @@ testNumerical = testNumerical[,!colnames(testNumerical) %in% killedNumericsNA]
 factorPotentials_uniqueNumericalValues = 
   readRDS("data/factorPotentials.rds") # result of considerations of DatatypesAnalysis.R
 factorColumns = which(colnames(testNumerical) %in% rownames(factorPotentials_uniqueNumericalValues))
-testFactor = testNumerical[,factorColumns]
+testFactor = as.data.frame(testNumerical[,factorColumns])
 for (i in 1:ncol(testFactor)) {
+  testFactor[,i] = as.numeric(testFactor[,i])
   maximum = max(na.omit(testFactor[,i]))
   testFactor[is.na(testFactor[,i]),i] = maximum + 1
   testFactor[,i] = factor(testFactor[,i], levels = unique(testFactor[,i]))
 }
 
-testNumerical = testNumerical[,-factorColumns]
-
+testNumerical = as.data.frame(testNumerical[,-factorColumns],stringsAsFactors=FALSE)
+for(i in 1:ncol(testNumerical)){
+  testNumerical[,i] =as.numeric(testNumerical[,i])
+}
 
 ##############################################
 # NUMERICAL DATA

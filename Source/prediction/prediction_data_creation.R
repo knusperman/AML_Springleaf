@@ -20,6 +20,7 @@ remove(data_numeric1, data_numeric2,data_numeric3,data_numeric4,data_numeric5,da
 data_factors = as.data.frame(readRDS("data/final/factorAttributes.rds"))[rownames(data_numeric),] #full train records. no NAs b/c treated as level
 data_strings = as.data.frame(readRDS("data/final/stringData_FINAL.rds"))[rownames(data_numeric),]
 data_dates   = as.data.frame(readRDS("data/final/dateData_FINAL.rds"))[rownames(data_numeric),] #f
+data_boolean = as.data.frame(readRDS("data/final/"))
 data_target  = as.data.frame(read.csv("data/target.csv"))[rownames(data_numeric),] #f #full train records
 
 
