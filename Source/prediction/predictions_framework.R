@@ -13,6 +13,8 @@ classif.task_undifferentiated = makeClassifTask(id = "undifferentiated", data = 
 classif.task_cleansed = makeClassifTask(id = "cleansed", data = cleansed, target = "target", positive="1")
 
 set.seed(1234)
-samp = sample(1:nrow(baseline()), )
 
 classif.lrn.RF = makeLearner("classif.randomForest", predict.type = "prob", fix.factors.prediction = TRUE)
+
+library(devtools)
+install_bitbucket("mkuhn/parallelRandomForest", ref="parallelRandomForest")

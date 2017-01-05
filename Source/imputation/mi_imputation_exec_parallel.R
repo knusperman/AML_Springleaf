@@ -38,16 +38,39 @@ miMatrix <- miNACorMat
 #miMatrix <- miCorMatrix(spearman, 5) # top 5 correlations
 df_imputed <- df
 seq = 1:ncol(df)
+seq = 1:8
+remove(miNACorMat)
+remove(spearman)
+remove(naCorMat)
 
 if (!"snow" %in% installed.packages()) install.packages("snow")
 library(snow)
-cl = makeCluster(8)
+nCores = parallel::detectCores()
+cl = makeCluster(nCores, type = "SOCK")
+snow::clusterCall(cl, function() library(mi))
+
+# export currently loaded environment
+ex = ls(.GlobalEnv)
+snow::clusterExport(cl, ex)
+res = snow::clusterApply(cl = cl, x = seq, fun = function(x) {
+  imputeWrapper(df_imputed, x, miMatrix)
+})
+snow::stopCluster(cl)
 
 ###### adjust i up to ncol(df) on all computing devices. 
 
-impute = function(i) {
-  imp <- createimputation(df, df_imputed, i, runParallelinside = FALSE)
-  if(class(imp)=="data.frame"){
-    df_imputed[rownames(imp), i] = imp[,1]
+imputeWrapper = function(dataframe, colnum, miMatrix) {
+  impCols = which(miMatrix[,colnum]==1)
+  colname = colnames(dataframe)[colnum]
+  impDF = dataframe[,c(colnum, impCols)]
+  print(paste("imputing:", colname, "----",colnum, sep=" "))
+  if(sum(is.na(df_imputed[,colnum])) > 0) {
+    result = complete(mi(impDF,n.chains=1, n.iter=15,parallel=FALSE),1)
+    result = data.frame(row.names = row.names(impDF[,1]), res = result[unlist(result[paste("missing_",colname,sep="")]),1])
+    gc() # collect some garbage
+    return(result)
+  }
+  else {
+    print("no NAs.")
   }
 }
