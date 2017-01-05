@@ -1,4 +1,3 @@
-
 ############################################################################################################
 #not on aws
 numericalDataSample <- data.frame(readRDS("data/numericalAttributes_cleansed_withoutFactors.rds"),stringsAsFactors =FALSE)
@@ -24,7 +23,7 @@ saveRDS(df2,"data/numeric imputations/impsplit2.rds")
 saveRDS(df3,"data/numeric imputations/impsplit3.rds")
 #############################################################################
 #############################################################################
-source("Source/imputation/mi_imputation.R")
+source("Source/imputation/mi_imputation.r")
 df <- readRDS("data/numeric imputations/impsplit1.rds")
 naCorMat <- getMissingnesPatternCorMat(df)
 
@@ -37,17 +36,11 @@ colnames(miNACorMat) = colnames(df)
 miMatrix <- miNACorMat
 #miMatrix <- miCorMatrix(spearman, 5) # top 5 correlations
 df_imputed <- df
-seq = 1:ncol(df)
-
-if (!"snow" %in% installed.packages()) install.packages("snow")
-library(snow)
-cl = makeCluster(8)
-
-###### adjust i up to ncol(df) on all computing devices. 
-
-impute = function(i) {
-  imp <- createimputation(df, df_imputed, i, runParallelinside = FALSE)
-  if(class(imp)=="data.frame"){
-    df_imputed[rownames(imp), i] = imp[,1]
+seq = 1:
+  ###### adjust i up to ncol(df) on all computing devices. 
+  for(i in seq){ 
+    imp <- createimputation(df, df_imputed, i)
+    if(class(imp)=="data.frame"){
+      df_imputed[rownames(imp), i] = imp[,1]
+    }
   }
-}
