@@ -61,8 +61,8 @@ buildRPART <- function(data,task,train,test,pars=list()){
 ############################################################################################################
 ###################################### PARAMETER OPTIMIZATION###############################################
 ############################################################################################################
-doParamOptimizationRPART <- function(learner,task,minsplitvector,minbucketvector,cpvector){
-  
+doParamOptimizationRPART <- function(task,minsplitvector,minbucketvector,cpvector){
+  classif.lrn.RPART = makeLearner("classif.rpart", predict.type = "prob", fix.factors.prediction = TRUE)
   cluster = makeCluster(parallel::detectCores(), type="SOCK")
   set_cv <- makeResampleDesc("CV",iters = 3L)
   
@@ -75,24 +75,26 @@ doParamOptimizationRPART <- function(learner,task,minsplitvector,minbucketvector
   gscontrol <- makeTuneControlGrid()
   #hypertune the parameters
   registerDoSNOW(cluster)
-  stune <- tuneParams(learner = learner, resampling = set_cv, task = task, par.set = gs, control = gscontrol)
+  stune <- tuneParams(learner = classif.lrn.RPART, resampling = set_cv, task = task, par.set = gs, control = gscontrol)
   stopCluster(cluster)
   stune
   #for minsplit in 10:50, minbucket5:50, cp 0.001:0.001 [Tune] Result: minsplit=23; minbucket=8; cp=0.000991 : acc.test.mean=0.772
 }
-doParamOptimizationRF <- function(learner, task,ntreevector,mtryvector){
+doParamOptimizationRF <- function(task,ntreevector,mtryvector){
   parallelStartSocket(2)
+  classif.lrn.RF = makeLearner("classif.randomForest", predict.type = "prob", fix.factors.prediction = TRUE)
   ps <- makeParamSet(
     makeDiscreteParam("ntree",values = ntreevector),
     makeDiscreteParam("mtry", values = mtryvector)
   )
   rdesc = makeResampleDesc("CV", iters = 2L)
   ctrl =  makeTuneControlGrid()
-  res = tuneParams(learner, task = task, resampling = rdesc, par.set = ps, control = ctrl)
+  res = tuneParams(classif.lrn.RF, task = task, resampling = rdesc, par.set = ps, control = ctrl)
   parallelStop()
   res
 }
-doParamOptimizationXG = function(learner, task,etavector,maxdepthvecotr,colsamplevector,subsamplevector){
+doParamOptimizationXG = function(task,etavector,maxdepthvecotr,colsamplevector,subsamplevector){
+  classif.lrn.XG = makeLearner("classif.xgboost", predict.type = "prob", fix.factors.prediction = TRUE)
   parallelStartSocket(2)
   ps = makeParamSet(
     makeDiscreteParam("eta", values=etavector),
@@ -102,7 +104,7 @@ doParamOptimizationXG = function(learner, task,etavector,maxdepthvecotr,colsampl
   )
   rdesc = makeResampleDesc("CV", iters = 3L) 
   ctrl =  makeTuneControlGrid() 
-  res = tuneParams(learner, task = task, resampling = rdesc, par.set = ps, control = ctrl)
+  res = tuneParams(classif.lrn.XG, task = task, resampling = rdesc, par.set = ps, control = ctrl)
   parallelStop()
   res
 }
