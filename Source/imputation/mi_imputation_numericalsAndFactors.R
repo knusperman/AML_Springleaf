@@ -1,5 +1,6 @@
 set.seed(1234)
 numericalData = as.data.frame(readRDS("data/numericalData_withoutCor1.rds"))
+source("source/imputation/mi_imputation_helperFunctions.R")
 
 for (i in 1:ncol(numericalData)) {
   numericalData[,i] = as.numeric(numericalData[,i])
@@ -15,7 +16,6 @@ pearson = cor(numericalDataChunk1, use = "pairwise.complete.obs")
 pearson[is.na(pearson)] = 0
 saveRDS(pearson, "data/tempPearson.rds")
 
-source("source/CorrelationHelper.R")
 miNACorMat <- buildMiceMatrix(pearson,5,naCorMat,0.7)
 row.names(miNACorMat) = colnames(numericalDataChunk1)
 colnames(miNACorMat) = colnames(numericalDataChunk1)

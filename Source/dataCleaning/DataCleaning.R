@@ -1,15 +1,9 @@
 if (!"ggplot2" %in% installed.packages()) install.packages("ggplot2")
 if (!"reshape2" %in% installed.packages()) install.packages("reshape2")
 if (!"corrplot" %in% installed.packages()) install.packages("corrplot")
-if (!"mice" %in% installed.packages()) install.packages("mice")
-if (!"randomForest" %in% installed.packages()) install.packages("randomForest")
-if (!"missForest" %in% installed.packages()) install.packages("missForest")
 library(ggplot2)
 library(reshape2)
 library(corrplot)
-library(mice)
-library(randomForest)
-library(missForest)
 
 trainData = read.csv("data/train.csv", stringsAsFactors = FALSE, strip.white = TRUE)
 ncol(trainData) # initially 1934 columns
@@ -34,6 +28,7 @@ trainData = trainData[,-ncol(trainData)]
 oneFactor = as.vector(which(sapply(apply(trainData, 2, unique), length) == 1)) #8 occurrences
 saveRDS(oneFactor, "data/REMOVE_oneFactor.rds")
 
+# not used subsequently but listed here as an initial overview
 twoFactors = as.vector(which(sapply(apply(trainData, 2, unique), length) == 2)) #66 occurrences
 threeFactors = as.vector(which(sapply(apply(trainData, 2, unique), length) == 3)) #36 occurrences
 fourFactors = as.vector(which(sapply(apply(trainData, 2, unique), length) == 4)) #65 occurrences

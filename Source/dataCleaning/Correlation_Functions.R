@@ -1,21 +1,3 @@
-eliminateDuplicateCorrelations = function(x) {
-  previous = data.frame(cbind(numeric(0), numeric(0)))
-  remove = numeric(0)
-  for(i in 1:nrow(x)) {
-    contained = FALSE
-    for (j in 1:nrow(previous)) {
-      if (nrow(previous) == 0) break
-      if (x[i,1] == previous[j,2] & x[i,2] == previous[j,1]) {
-        contained = TRUE
-        break
-      }
-    }
-    if (!contained) previous = rbind(previous, x[i,])
-    else remove = c(remove, i)
-  }
-  return(x[-remove,])
-}
-
 # eliminates the duplicates from the correlations
 # but eliminates keeps the one with more NAs
 # this results in the column with more NAs being deleted in the end
@@ -29,25 +11,6 @@ eliminateDuplicateCorrelationsMoreNAs = function(indices, data) {
     
   }
   return(unique(result))
-}
-
-# provides the attributes with the highest absolute correlation per attribute
-# to limit the amount of attributes used for value imputation for the most
-# expressive ones for the attribute of the missing value
-buildMiceMatrix = function(correlation, usedAttributes = 5, naCor, naCorThreshold) {
-  diag(correlation) = 0
-  result = matrix(ncol = ncol(correlation), nrow = nrow(correlation))
-  for (i in 1:ncol(correlation)) {
-    ord = order(abs(correlation[,i]), decreasing = TRUE)
-    ord = ord[!(ord %in% (which(naCor[,i] > naCorThreshold)))]
-    ord = ord[1:usedAttributes]
-    temp = seq(1, ncol(correlation), by = 1)
-    temp = temp %in% ord
-    temp[temp == TRUE] = 1
-    temp[temp == FALSE] = 0
-    result[i,] = temp
-  }
-  return(result)
 }
 
 createCorrelationPlots = function(correlations, suffix) {
