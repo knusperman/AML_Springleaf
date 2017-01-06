@@ -25,6 +25,7 @@ saveRDS(df3,"data/numeric imputations/impsplit3.rds")
 #############################################################################
 #############################################################################
 source("Source/imputation/mi_imputation.R")
+source("source/imputation/mi_imputation_helperFunctions.R")
 df <- readRDS("data/numeric imputations/impsplit1.rds")
 naCorMat <- getMissingnesPatternCorMat(df)
 
@@ -39,10 +40,7 @@ miMatrix <- miNACorMat
 df_imputed <- df
 seq = 1:ncol(df)
 remove(miNACorMat)
-remove(spearman)
-remove(naCorMat)
 
-source("source/imputation/mi_imputation_helperFunctions.R")
 if (!"snow" %in% installed.packages()) install.packages("snow")
 library(snow)
 
@@ -93,21 +91,24 @@ res = snow::clusterApply(cl = cl, x = seq, fun = function(x) {
 diff3 = Sys.time() - time3
 snow::stopCluster(cl)
 
+seq = 1:64
+time4 = Sys.time()
+nCores = parallel::detectCores()
+cl = makeCluster(nCores, type = "SOCK")
+snow::clusterCall(cl, function() library(mi))
+
+# export currently loaded environment
+ex = ls(.GlobalEnv)
+snow::clusterExport(cl, ex)
+res = snow::clusterApply(cl = cl, x = seq, fun = function(x) {
+  imputeWrapper(df_imputed, x, miMatrix)
+})
+diff4 = Sys.time() - time4
+snow::stopCluster(cl)
+
 # do some benchmarking of sequential version
 
 seq = 1:8
-time4 = Sys.time()
-for(i in seq){ 
-  imp <- createimputation(df, df_imputed, i)
-  if(class(imp)=="data.frame"){
-    df_imputed[rownames(imp), i] = imp[,1]
-  }
-}
-diff4 = Sys.time() - time4
-
-df_imputed = df
-
-seq = 1:16
 time5 = Sys.time()
 for(i in seq){ 
   imp <- createimputation(df, df_imputed, i)
@@ -119,7 +120,7 @@ diff5 = Sys.time() - time5
 
 df_imputed = df
 
-seq = 1:32
+seq = 1:16
 time6 = Sys.time()
 for(i in seq){ 
   imp <- createimputation(df, df_imputed, i)
@@ -131,34 +132,61 @@ diff6 = Sys.time() - time6
 
 df_imputed = df
 
-differences = c(diff1, diff2, diff3, diff4, diff5, diff6)
+seq = 1:32
+time7 = Sys.time()
+for(i in seq){ 
+  imp <- createimputation(df, df_imputed, i)
+  if(class(imp)=="data.frame"){
+    df_imputed[rownames(imp), i] = imp[,1]
+  }
+}
+diff7 = Sys.time() - time7
+
+df_imputed = df
+
+seq = 1:64
+time8 = Sys.time()
+for(i in seq){ 
+  imp <- tryCatch(createimputation(df, df_imputed, i), error = function(e) e)
+  if(class(imp)=="data.frame"){
+    df_imputed[rownames(imp), i] = imp[,1]
+  }
+}
+diff8 = Sys.time() - time8
+
+df_imputed = df
 
 require(mice)
 # create random mice matrix for testing
 mat = buildMiceMatrix(spearman[1:8, 1:8], 5, naCorMat[1:8, 1:8], 1)
-time7 = Sys.time()
+time9 = Sys.time()
 r = mice(df_imputed[,1:8], predictorMatrix = mat)
-diff7 = Sys.time() -time7
-
+diff9 = Sys.time() -time9
 
 mat = buildMiceMatrix(spearman[1:16, 1:16], 5, naCorMat[1:16, 1:16], 1)
-time8 = Sys.time()
+time10 = Sys.time()
 r = mice(df_imputed[,1:16], predictorMatrix = mat)
-diff8 = Sys.time() -time8
-
+diff10 = Sys.time() -time10
 
 mat = buildMiceMatrix(spearman[1:32, 1:32], 5, naCorMat[1:32, 1:32], 1)
-time9 = Sys.time()
+time11 = Sys.time()
 r = mice(df_imputed[,1:32], predictorMatrix = mat)
-diff9 = Sys.time() -time9
-differences = c(differences, diff7, diff8, diff9)
-differences[-7] = differences[-7]*60
+diff11 = Sys.time() -time11
 
-differencesPlotData = as.data.frame(cbind(SetSize = rep(c("8 Attributes", "16 Attributes", "32 Attributes"), times = 3),
+mat = buildMiceMatrix(spearman[1:64, 1:64], 5, naCorMat[1:64, 1:64], 1)
+time12 = Sys.time()
+r = mice(df_imputed[,1:64], predictorMatrix = mat)
+diff12 = Sys.time() -time12
+
+differences = c(diff1, diff2, diff3, diff4, diff5, diff6, diff7, diff8, diff9, diff10, diff11, diff12)
+# diff9 is in seconds
+differences[-9] = differences[-9]*60
+
+differencesPlotData = as.data.frame(cbind(SetSize = rep(c("8 Attributes", "16 Attributes", "32 Attributes", "64 Attributes"), times = 3),
                                           Duration = c(differences),
-                                          Method = c(rep("MI parallel", 3),  rep("MI sequential", 3), 
-                                                     rep("MICE", times = 3))), stringsAsFactors = FALSE)
-differencesPlotData[,1] = factor(differencesPlotData[,1], levels = c("8 Attributes", "16 Attributes", "32 Attributes"))
+                                          Method = c(rep("MI parallel", 4),  rep("MI sequential", 4), 
+                                                     rep("MICE", times = 4))), stringsAsFactors = FALSE)
+differencesPlotData[,1] = factor(differencesPlotData[,1], levels = c("8 Attributes", "16 Attributes", "32 Attributes", "64 Attributes"))
 differencesPlotData[,2] = as.numeric(differencesPlotData[,2])
 differencesPlotData[,3] = factor(differencesPlotData[,3], levels = unique(differencesPlotData[,3]))
 
