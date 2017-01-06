@@ -32,7 +32,7 @@ library(foreach)
 source("Source/prediction/data_functions.r")
 data_numeric = buildNumericData(c(3)) #imputed sample
 
-data_factors = as.data.frame(readRDS("data/final/factorAttributes.rds"))[rownames(data_numeric),] #full train records. no NAs b/c treated as level
+data_factors = as.data.frame(readRDS("data/final/factorAttributes_FINAL.rds"))[rownames(data_numeric),] #full train records. no NAs b/c treated as level
 data_strings = as.data.frame(readRDS("data/final/stringData_FINAL.rds"))[rownames(data_numeric),]
 data_dates   = as.data.frame(readRDS("data/final/dateData_FINAL.rds"))[rownames(data_numeric),] #f
 data_target  = as.data.frame(read.csv("data/target.csv"))[rownames(data_numeric),] #f #full train records
