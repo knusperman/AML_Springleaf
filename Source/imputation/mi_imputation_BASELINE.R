@@ -2,6 +2,8 @@
 # no cleaning at all
 # We assume that our cleaned dataset significantly outperforms the uncleaned dataset
 
+source("source/imputation/mi_imputation_helperFunctions.R")
+source("source/imputation/mi_imputation.R")
 trainData = readRDS("data/check1.rds")
 set.seed(1234)
 factors = readRDS("data/factorPotentials.rds")
@@ -22,7 +24,6 @@ remove(numericals)
 #})
 #numericalData = numericalData[,!nas > 0.90]
 
-source("source/imputation/mi_imputation.R")
 naCorMat <- getMissingnesPatternCorMat(numericalData)
 
 # take pearson here because it takes less time
@@ -30,7 +31,6 @@ pearson = cor(numericalData, use = "pairwise.complete.obs")
 pearson[is.na(pearson)] = 0
 saveRDS(pearson, "data/tempPearson.rds")
 
-source("source/CorrelationHelper.R")
 miNACorMat <- buildMiceMatrix(pearson,5,naCorMat,0.7)
 row.names(miNACorMat) = colnames(numericalData)
 colnames(miNACorMat) = colnames(numericalData)
