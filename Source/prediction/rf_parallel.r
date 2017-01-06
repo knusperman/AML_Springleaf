@@ -12,12 +12,11 @@ getHyperPars(classif.lrn.RF) #get changed hyper parameters
 doparameteroptimizationRF <- function(learner, task){
   
 rf_param <- makeParamSet(
-  makeIntegerParam("ntree",lower = 50, upper = 500,),
-  makeIntegerParam("mtry", lower = 3, upper = 10),
-  makeIntegerParam("nodesize", lower = 10, upper = 50)
+  makeDiscreteParam("ntree",values = c(300,400,500,600)),
+  makeDiscreteParam("mtry", values = c(30,40,50,60))
  )
 rancontrol <- makeTuneControlRandom(maxit = 5L)
-set_cv <- makeResampleDesc("CV",iters = 3L)
+set_cv <- makeResampleDesc("CV",iters = 2L)
 
 registerDoSNOW(cluster)
 stune <- tuneParams(learner = learner, resampling = set_cv, task = task, par.set = rf_param, control = rancontrol)
