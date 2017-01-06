@@ -42,6 +42,7 @@ remove(miNACorMat)
 remove(spearman)
 remove(naCorMat)
 
+source("source/imputation/mi_imputation_helperFunctions.R")
 if (!"snow" %in% installed.packages()) install.packages("snow")
 library(snow)
 
@@ -130,20 +131,43 @@ diff6 = Sys.time() - time6
 
 df_imputed = df
 
+differences = c(diff1, diff2, diff3, diff4, diff5, diff6)
+
+require(mice)
+# create random mice matrix for testing
+mat = buildMiceMatrix(spearman[1:8, 1:8], 5, naCorMat[1:8, 1:8], 1)
+time7 = Sys.time()
+r = mice(df_imputed[,1:8], predictorMatrix = mat)
+diff7 = Sys.time() -time7
 
 
-imputeWrapper = function(dataframe, colnum, miMatrix) {
-  impCols = which(miMatrix[,colnum]==1)
-  colname = colnames(dataframe)[colnum]
-  impDF = dataframe[,c(colnum, impCols)]
-  print(paste("imputing:", colname, "----",colnum, sep=" "))
-  if(sum(is.na(df_imputed[,colnum])) > 0) {
-    result = complete(mi(impDF,n.chains=1, n.iter=15,parallel=FALSE),1)
-    result = data.frame(row.names = row.names(impDF[,1]), res = result[unlist(result[paste("missing_",colname,sep="")]),1])
-    gc() # collect some garbage
-    return(result)
-  }
-  else {
-    print("no NAs.")
-  }
-}
+mat = buildMiceMatrix(spearman[1:16, 1:16], 5, naCorMat[1:16, 1:16], 1)
+time8 = Sys.time()
+r = mice(df_imputed[,1:16], predictorMatrix = mat)
+diff8 = Sys.time() -time8
+
+
+mat = buildMiceMatrix(spearman[1:32, 1:32], 5, naCorMat[1:32, 1:32], 1)
+time9 = Sys.time()
+r = mice(df_imputed[,1:32], predictorMatrix = mat)
+diff9 = Sys.time() -time9
+differences = c(differences, diff7, diff8, diff9)
+differences[-7] = differences[-7]*60
+
+differencesPlotData = as.data.frame(cbind(SetSize = rep(c("8 Attributes", "16 Attributes", "32 Attributes"), times = 3),
+                                          Duration = c(differences),
+                                          Method = c(rep("MI parallel", 3),  rep("MI sequential", 3), 
+                                                     rep("MICE", times = 3))), stringsAsFactors = FALSE)
+differencesPlotData[,1] = factor(differencesPlotData[,1], levels = c("8 Attributes", "16 Attributes", "32 Attributes"))
+differencesPlotData[,2] = as.numeric(differencesPlotData[,2])
+differencesPlotData[,3] = factor(differencesPlotData[,3], levels = unique(differencesPlotData[,3]))
+
+png("fig/imputation_speed.png", height = 800, width = 800)
+ggplot(data = differencesPlotData, aes(x = SetSize, y = Duration, group = Method)) + 
+  geom_line(aes(colour = Method), size = 2) + geom_abline(slope = 1, intercept = 0, size = 2) +
+  xlab("Sample size") + ylab("Duration in seconds") + theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black", angle = 45, hjust = 1), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) + 
+  theme(legend.text = element_text(size = 40), legend.title = element_text(size = 40, face = "bold"))
+dev.off()

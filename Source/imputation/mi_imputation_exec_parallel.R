@@ -57,11 +57,17 @@ res = snow::clusterApply(cl = cl, x = seq, fun = function(x) {
 })
 snow::stopCluster(cl)
 
+# started 5:26
+
+
 for (i in 1:length(res)) {
   temp = res[[i]]
   col = which(colnames(df_imputed) %in% colnames(res[[i]]))
   df_imputed[is.na(df_imputed[,col]),col] = temp
 }
+
+saveRDS(df_imputed[1:25000,], "data/numeric imputations/impsplit1_done1.rds")
+saveRDS(df_imputed[25001:50000,], "data/numeric imputations/impsplit1_done2.rds")
 
 imputeWrapper = function(dataframe, colnum, miMatrix) {
   impCols = which(miMatrix[,colnum]==1)
