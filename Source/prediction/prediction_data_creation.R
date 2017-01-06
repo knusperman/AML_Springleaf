@@ -1,25 +1,4 @@
-<<<<<<< HEAD
-####################################################################################
-#######OLD #########################################################################
-#numericalDataSample <- readRDS("data/numericalAttributes_cleansed_withoutFactors.rds")
-#numericalDataSample <- as.data.frame(numericalDataSample)
-#data_numeric1 = as.data.frame(readRDS("data/numeric imputations/imp10k.rds"))
-#data_numeric2 = as.data.frame(readRDS("data/numeric imputations/imp10-30k.rds"))
-#data_numeric3 = as.data.frame(readRDS("data/numeric imputations/imp30-40k.rds"))
-#data_numeric4 = as.data.frame(readRDS("data/numeric imputations/imp40-50k.rds"))
-#data_numeric5 = as.data.frame(readRDS("data/numeric imputations/imp50-70k.rds"))
-#data_numeric6 = as.data.frame(readRDS("data/numeric imputations/imp70-90k.rds"))
-#data_numeric7 = as.data.frame(readRDS("data/numeric imputations/imp90-110k.rds"))
-#data_numeric8 = as.data.frame(readRDS("data/numeric imputations/imp110-130k.rds"))
-#data_numeric9 = as.data.frame(readRDS("data/numeric imputations/imp130k+.rds"))
-#data_numeric = rbind(data_numeric1,data_numeric2,data_numeric3,data_numeric4,data_numeric5,data_numeric6,data_numeric7, data_numeric8,data_numeric9)
-#data_numeric = data_numeric[-c(130001),]
-####################################################################################
-####### END OLD ####################################################################
 
-s <- readRDS("data/sample.rds") #1 = 1:50000, 2 = 500001:100000, 3 = 100001:145231 in train set
-
-=======
 
 if (!"mlr" %in% installed.packages()) install.packages("mlr")
 if (!"e1071" %in% installed.packages()) install.packages("e1071")
@@ -56,7 +35,6 @@ library(foreach)
 #data_numeric2b = as.data.frame(readRDS("data/numeric imputations/impsplit2_done2.rds"))
 #data_numeric2 = rbind(data_numeric2a,data_numeric2b)
 #remove(data_numeric2a,data_numeric2b)
->>>>>>> 7b9765dd5315627bb41fcb98596cae663bc246cd
 data_numeric3a = as.data.frame(readRDS("data/numeric imputations/impsplit3_done1.rds"))
 data_numeric3b = as.data.frame(readRDS("data/numeric imputations/impsplit3_done2.rds"))
 data_numeric3 = rbind(data_numeric3a,data_numeric3b)
@@ -94,9 +72,6 @@ remove(data_dates)
 remove(data_target)
 
 #remove cols you do not want right now
-<<<<<<< HEAD
-mydata <- mydata[,-which(colnames(mydata) %in% collist$cols_dates)]
-=======
 #mydata <- mydata[,-which(colnames(mydata) %in% collist$cols_dates)]
 
 classif.task = makeClassifTask(id = "mtc", data = mydata, target = "target", positive="1")
@@ -108,9 +83,3 @@ test.set <- test.set[-which(test.set %in% train.set)]
 
 listLearners(classif.task)
 
-#im_feat <- generateFilterValuesData(classif.task, method = c("information.gain","chi.squared"))
-#plotFilterValues(im_feat,n.show = 20)
-
-
-
->>>>>>> 7b9765dd5315627bb41fcb98596cae663bc246cd
