@@ -17,3 +17,7 @@ remove(spearman)
 remove(naCorMat)
 require(mice)
 r = mice(df_imputed, predictorMatrix = miMatrix)
+
+# does not work
+# Error in solve.default(xtx + diag(pen)) : 
+#   system is computationally singular: reciprocal condition number = 1.83514e-16
