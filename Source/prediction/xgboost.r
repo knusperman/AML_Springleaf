@@ -1,8 +1,6 @@
 #needs prediction_exec code to run
 classif.lrn.XG = makeLearner("classif.xgboost", predict.type = "prob", fix.factors.prediction = TRUE)
-classif.lrn.XG$par.set
-classif.lrn.XG = setHyperPars(classif.lrn.XG, par.vals = list(nrounds=65,eval_metric="auc",eta = 0.128,max_depth=6,colsample_bytree=0.653,subsample=0.816))
-  getHyperPars(classif.lrn.XG)
+classif.lrn.XG = setHyperPars(classif.lrn.XG, par.vals=list(eval_metric="auc"))
 
 ############################################################################################################
 ###################################### PARAMETER OPTIMIZATION###############################################
@@ -19,19 +17,27 @@ rdesc = makeResampleDesc("CV", iters = 3L) # # 2) Use 3-fold Cross-Validation to
 ctrl =  makeTuneControlRandom(maxit = 10) # # 3) Here we use Random Search (with 10 Iterations) to find the optimal hyperparameter
 
 registerDoSNOW(cluster)
-result = tuneParams(learner, task = task, resampling = rdesc, par.set = ps, control = ctrl)# # 4) now use the learner on the training Task with the 3-fold CV to optimize your set of parameters and evaluate it with SQWK
+stune = tuneParams(learner, task = task, resampling = rdesc, par.set = ps, control = ctrl)# # 4) now use the learner on the training Task with the 3-fold CV to optimize your set of parameters and evaluate it with SQWK
 stopCluster(cluster)
 
-result
+stune
 }
+
 # # 5) set the optimal hyperparameter
-classif.lrn.XG = setHyperPars(classif.lrn.XG, par.vals = res$x)
+# parameteroptimization =doParamOptimizationXG(classif.lrn.XG, classsif.task)
+# classif.lrn.XG = setHyperPars(classif.lrn.XG, par.vals = parameteroptimization$x)
+
 ############################################################################################################
+################################# Training #################################################################
 ############################################################################################################
-############################################################################################################
+# if no parameter optimization is performed and a certain config should run:
+classif.lrn.XG$par.set
+classif.lrn.XG = setHyperPars(classif.lrn.XG, par.vals = list(nrounds=65,eval_metric="auc",eta = 0.128,max_depth=6,colsample_bytree=0.653,subsample=0.816))
+getHyperPars(classif.lrn.XG)
+
 mod.XG  = train(classif.lrn.XG, classif.task, subset = train.set)
 ############################################################################################################
-############################################################################################################
+################################# Prediction################################################################
 ############################################################################################################
 pred.XG  = predict(mod.XG, task = classif.task, subset = test.set)
 mlr::performance(pred.XG, auc)

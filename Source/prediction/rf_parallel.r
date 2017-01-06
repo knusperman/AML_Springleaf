@@ -1,11 +1,8 @@
 
 classif.lrn.RF = makeLearner("classif.randomForest", predict.type = "prob", fix.factors.prediction = TRUE)
-
-classif.lrn.RF$par.set
-classif.lrn.RF= setHyperPars(classif.lrn.RF, ntree = 150) #forest size = ntree * cores
-
+classif.lrn.RF = setHyperPars(classif.lrn.RF, par.vals=list(eval_metric="auc"))
 ############################
-cores = 2
+cores = parallel::detectCores()
 cluster = makeCluster(cores, type="SOCK")
 ############################
 getHyperPars(classif.lrn.RF) #get changed hyper parameters
@@ -15,7 +12,7 @@ getHyperPars(classif.lrn.RF) #get changed hyper parameters
 doparameteroptimizationRF <- function(learner, task){
   
 rf_param <- makeParamSet(
-  makeIntegerParam("ntree",lower = 50, upper = 500),
+  makeIntegerParam("ntree",lower = 50, upper = 500,),
   makeIntegerParam("mtry", lower = 3, upper = 10),
   makeIntegerParam("nodesize", lower = 10, upper = 50)
  )
@@ -23,13 +20,22 @@ rancontrol <- makeTuneControlRandom(maxit = 5L)
 set_cv <- makeResampleDesc("CV",iters = 3L)
 
 registerDoSNOW(cluster)
-result <- tuneParams(learner = learner, resampling = set_cv, task = task, par.set = rf_param, control = rancontrol)
+stune <- tuneParams(learner = learner, resampling = set_cv, task = task, par.set = rf_param, control = rancontrol)
 stopCluster(cluster)
-result
+stune
 }
+
+# # 5) set the optimal hyperparameter
+# parameteroptimization = doParamOptimizationRF(classif.lrn.RF, classif.task)
+# classif.lrn.RF = setHyperPars(classif.lrn.RF, par.vals = parameteroptimization$x)
+
 ############################################################################################################
+################################# Training #################################################################
 ############################################################################################################
-############################################################################################################
+# if no parameter optimization is performed and a certain config should run:
+classif.lrn.RF$par.set
+classif.lrn.RF= setHyperPars(classif.lrn.RF,eval_metric="auc", ntree = 150,mtry=37,nodesize=10) #forest size = ntree * cores
+getHyperPars(classif.lrn.RF)
 
 registerDoSNOW(cluster)
 mods = foreach(i=1:cores,.inorder=FALSE,.packages="mlr") %dopar% {
@@ -42,7 +48,7 @@ for(i in 2:cores){
 }
 #remove(mods)
 ############################################################################################################
-############################################################################################################
+################################# Prediction################################################################
 ############################################################################################################
 pred.RF  = predict(mod.RF, task = classif.task, subset = test.set)
 mlr::performance(pred.RF, auc)
