@@ -48,7 +48,7 @@ remove(data_numeric1,data_numeric2,data_numeric3)
 s <- readRDS("data/sample.rds") #1 = 1:50000, 2 = 500001:100000, 3 = 100001:145231 in train set
 #s[c(1:5,50001:50005,100001:100005)] == rownames(data_numeric)[c(1:5,50001:50005,100001:100005)]
 
-data_factors = as.data.frame(readRDS("data/final/factorAttributes.rds"))[rownames(data_numeric),] #full train records. no NAs b/c treated as level
+data_factors = as.data.frame(readRDS("data/final/factorAttributes_FINAL.rds"))[rownames(data_numeric),] #full train records. no NAs b/c treated as level
 data_strings = as.data.frame(readRDS("data/final/stringData_FINAL.rds"))[rownames(data_numeric),]
 data_dates   = as.data.frame(readRDS("data/final/dateData_FINAL.rds"))[rownames(data_numeric),] #f
 data_target  = as.data.frame(read.csv("data/target.csv"))[rownames(data_numeric),] #f #full train records
