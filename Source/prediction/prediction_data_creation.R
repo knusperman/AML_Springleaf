@@ -8,6 +8,7 @@ if(!"doSNOW" %in% installed.packages()) install.packages("doSNOW")
 if(!"foreach" %in% installed.packages()) install.packages("foreach")
 if(!"randomForest" %in% installed.packages()) install.packages("randomForest")
 if(!"rpart" %in% installed.packages()) install.packages("rpart")
+if(!"parallelMap" %in% installed.packages()) install.packages("parallelMap")
 library(devtools)
 if ("xgboost" %in% installed.packages()){
   if(packageVersion("xgboost")!="0.4.4"){
@@ -19,6 +20,7 @@ if ("xgboost" %in% installed.packages()){
 }
 
 library(xgboost)
+library(parallelMap)
 library(rpart)
 library(mlr)
 library(e1071)
