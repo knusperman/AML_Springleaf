@@ -5,40 +5,48 @@ for (i in 1:ncol(numericalData)) {
   numericalData[,i] = as.numeric(numericalData[,i])
 }
 
+numericalDataChunk1 = numericalData[1:50000,]
 source("source/imputation/mi_imputation.R")
 naCorMat <- getMissingnesPatternCorMat(numericalData)
 
+
 # take pearson here because it takes less time
-pearson = cor(numericalData, use = "pairwise.complete.obs")
+pearson = cor(numericalDataChunk1, use = "pairwise.complete.obs")
 pearson[is.na(pearson)] = 0
 saveRDS(pearson, "data/tempPearson.rds")
 
 source("source/CorrelationHelper.R")
 miNACorMat <- buildMiceMatrix(pearson,5,naCorMat,0.7)
-row.names(miNACorMat) = colnames(numericalData)
-colnames(miNACorMat) = colnames(numericalData)
+row.names(miNACorMat) = colnames(numericalDataChunk1)
+colnames(miNACorMat) = colnames(numericalDataChunk1)
 miMatrix <- miNACorMat
 #miMatrix <- miCorMatrix(spearman, 5) # top 5 correlations
-numericalData_imputed <- numericalData
-seq = 1:ncol(numericalData)
+numericalData_imputed <- numericalDataChunk1
+seq = 1:ncol(numericalDataChunk1)
 ###### adjust i up to ncol(df) on all computing devices.
-errors = numeric(0)
-for(i in seq){
-  imp = tryCatch({
-    imp <- createimputation(numericalData, numericalData_imputed, i)
-  }, error = function(e) e)
-  if (inherits(imp, "error")) {
-    errors = c(errors, i)
-    next
-  }
-  if(class(imp)=="data.frame"){
-    numericalData_imputed[rownames(imp), i] = imp[,1]
-  }
-}
 
-length(errors) # how many attributes could not be imputed?
-sum(is.na(numericalData))
-sum(is.na(numericalData_imputed))
+if (!"snow" %in% installed.packages()) install.packages("snow")
+library(snow)
+nCores = parallel::detectCores()
+cl = makeCluster(nCores, type = "SOCK")
+snow::clusterCall(cl, function() library(mi))
+
+source("source/imputation/mi_imputation_helperFunctions.R")
+
+# export currently loaded environment
+ex = ls(.GlobalEnv)
+snow::clusterExport(cl, ex)
+res = snow::clusterApply(cl = cl, x = seq, fun = function(x) {
+  res = tryCatch(imputeWrapper(numericalData_imputed, x, miMatrix), error = function(e) e)
+  if (!inherits(res, "error")) return(res)
+})
+snow::stopCluster(cl)
+
+for (i in 1:length(res)) {
+  temp = res[[i]]
+  col = which(colnames(numericalData_imputed) %in% colnames(res[[i]]))
+  numericalData_imputed[is.na(numericalData_imputed[,col]),col] = temp
+}
 
 # still some NAs left
 # cheap workaround: NAs = median of the attribute
