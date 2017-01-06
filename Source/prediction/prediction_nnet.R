@@ -9,12 +9,12 @@ set.seed(1234)
 samp = sample(1:nrow(data), 30000)
 task = makeClassifTask(id = "nn", data = data[samp[1:20000],], target = "target", positive="1")
 learner_nn = makeLearner("classif.avNNet", predict.type = "prob", fix.factors.prediction = TRUE)
-learner_nn = setHyperPars(learner_nn, MaxNWts = 999999999)
-learner_nn = setHyperPars(learner_nn, size = 100)
+learner_nn = setHyperPars(learner_nn, MaxNWts = 999999)
+learner_nn = setHyperPars(learner_nn, size = 10) # cannot use size = 100 apparently (error message cannot allocate vector of size <some> kbs)
 model = train(learner_nn, task)
 
 pred = predict(model, newdata = data[samp[20001:30000],])
 sum(is.na(pred$data$response)) #77
 pred$data = pred$data[!is.na(pred$data$response),]
-perf = generateThreshVsPerfData(pred, measures = list(fpr, tpr, mmce))
-plotROCCurves(perf)
+
+saveRDS(pred, "data/predictions/pred_nnet_cleansedDataset_subset.rds")
