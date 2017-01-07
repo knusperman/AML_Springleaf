@@ -64,11 +64,13 @@ saveRDS(rf_300_40_20, "models/imputed/rf_300_40_20.rds")
 rf_400_40_10= buildRF(classif.task,train.set,test.set,list(ntree=100,mtry=40, nodesize=10)) # done by MH 
 saveRDS(rf_400_40_10, "data/prediction/rf_400_40_10.rds")
 
-rf_500_40_10 = buildRF(classif.task,train.set,test.set,list(ntree=125,mtry=40,nodesize=10)) # done by MH 
+rf_500_40_10 = buildRF(classif.task,train.set,test.set,list(ntree=125,mtry=40,nodesize=10)) # done by MHO
 saveRDS(rf_500_40_10, "data/prediction/rf_500_40_10.rds")
 
 rf_600_40_10 = buildRF(classif.task,train.set,test.set,list(ntree=150,mtry=40,nodesize=10)) # done AWS
 saveRDS(rf_300_40_20, "models/imputed/rf_600_40_10.rds")
 
 
-
+#### # todo
+rf_600_40_1 = buildRF(classif.task,train.set,test.set,list(ntree=150,mtry=40,nodesize=11)) # done by MHO
+saveRDS(rf_600_40_1, "data/prediction/rf_600_40_1.rds")
