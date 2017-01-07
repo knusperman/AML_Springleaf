@@ -8,13 +8,3 @@ s <- readRDS("data/sample.rds") #1 = 1:50000, 2 = 500001:100000, 3 = 100001:1452
 
 NAstatistics <- readRDS("data/NAstatistics.rds") #since data has no more information about amout of imputation in a column
 collist <- readRDS("data/collist.rds") #some data for selecting the right columns for predicting
-
-buildNumericData <- function(vec){
-  data = data.frame()
-  for(i in vec){
-   p1 =  as.data.frame(readRDS(paste("data/numeric imputations/impsplit",i,"_done1.rds",sep = "")))
-   p2 =  as.data.frame(readRDS(paste("data/numeric imputations/impsplit",i,"_done2.rds",sep = "")))
-   data = rbind(data,rbind(p1,p2))
-  }
-  data
-}
