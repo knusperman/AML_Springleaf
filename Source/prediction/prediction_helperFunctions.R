@@ -10,7 +10,6 @@ getPlotAUC = function(pred) {
   return(p)
 }
 
-b
 buildNumericData <- function(vec){
   data = data.frame()
   for(i in vec){
