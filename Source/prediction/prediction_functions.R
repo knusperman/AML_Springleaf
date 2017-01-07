@@ -1,7 +1,7 @@
 ############################################################################################################
 ###################################### BUILD FUNCTIONS #####################################################
 ############################################################################################################
-buildXG <- function(data,task,train,test,pars=list()){
+buildXG <- function(task,train,test,pars=list()){
   
   classif.lrn.XG = makeLearner("classif.xgboost", predict.type = "prob", fix.factors.prediction = TRUE)
   if(length(pars)){
@@ -15,7 +15,7 @@ buildXG <- function(data,task,train,test,pars=list()){
   auc <- mlr::performance(pred.XG, auc)
   list(model=mod.XG,predictions=pred.XG,auc=auc)
 }
-buildRF <- function(data,task,train,test,pars=list()){
+buildRF <- function(task,train,test,pars=list()){
 
   cores = parallel::detectCores()
   treesPerTask = 500/cores   #500 trees is standard
@@ -45,7 +45,7 @@ buildRF <- function(data,task,train,test,pars=list()){
   
   list(model=mod.RF,predictions=pred.RF,auc=auc)
 }
-buildRPART <- function(data,task,train,test,pars=list()){
+buildRPART <- function(task,train,test,pars=list()){
   classif.lrn.RPART = makeLearner("classif.rpart", predict.type = "prob", fix.factors.prediction = TRUE)
   if(length(pars)){
     classif.lrn.RPART = setHyperPars(classif.lrn.RPART, par.vals=pars)

@@ -9,20 +9,20 @@ doParamOptimizationRPART <- function(learner,task){
   set_cv <- makeResampleDesc("CV",iters = 3L)
   
   gs <- makeParamSet(
-    makeIntegerParam("minsplit",lower = 10, upper = 50),
-    makeIntegerParam("minbucket", lower = 5, upper = 50),
+    makeDiscreteParam("minsplit",values = c(10,20,30,40,50)),
+    makeDiscreteParam("minbucket", values = c(10,20,30,40,50)),
     makeNumericParam("cp", lower = 0.0001, upper = 0.001)
   )
   
   gscontrol <- makeTuneControlRandom(maxit=20)
   #hypertune the parameters
   registerDoSNOW(cluster)
-  stune <- tuneParams(learner = learner, resampling = set_cv, task = task, par.set = gs, control = gscontrol, measures = acc)
+  stune <- tuneParams(learner = learner, resampling = set_cv, task = task, par.set = gs, control = gscontrol)
   stopCluster(cluster)
   stune
   #for minsplit in 10:50, minbucket5:50, cp 0.001:0.001 [Tune] Result: minsplit=23; minbucket=8; cp=0.000991 : acc.test.mean=0.772
 }
-
+rparttune <- doParamOptimizationRPART(classif.lrn.RPART, classif.task)
 # # 5) set the optimal hyperparameter
 #parameteroptimization = doParamOptimizationRPART(classif.lrn.RPART, classif.task)
 #classif.lrn.RPART = setHyperPars(classif.lrn.RPART, par.vals=parameteroptimization$x)

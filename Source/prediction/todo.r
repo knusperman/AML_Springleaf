@@ -1,10 +1,10 @@
-buildXG(mydata,classif.task,train.set,test.set)->xgdefault
+buildXG(classif.task,train.set,test.set)->xgdefault
 saveRDS(xgdefault, "models/imputed/xgboost_default.rds")
 remove(xgdefault)
-buildRPART(mydata,classif.task,train.set,test.set)->rpartdefault
+buildRPART(classif.task,train.set,test.set)->rpartdefault
 saveRDS(rpartdefault, "models/imputed/rpart_default.rds")
 remove(rpartdefault)
-buildRF(mydata,classif.task,train.set,test.set)->rfdefault
+buildRF(classif.task,train.set,test.set)->rfdefault
 saveRDS(rfdefault, "models/imputed/rf_default.rds")
 remove(rfdefault)
 
