@@ -1,7 +1,6 @@
 #############################################################################
 #ROC Analysis
 #############################################################################
-#get pred.XX objects to compare first
 
 
 ####compare the default
@@ -16,7 +15,10 @@ dev.off()
 readRDS("models/imputed/rpart_default.rds")->rpartdefault
 readRDS("models/imputed/rpart-tuning.rds")->rparttuning
 tunedrpart <- buildRPART(mydata,classif.task,train.set,test.set,pars = rparttuning$x)
+png(filename = "fig/ROC_RPART-comparison.png",width = 1000,height = 800)
 getPlotAUC(list(default = rpartdefault$predictions, tuned =  tunedrpart$predictions))
+dev.off()
+
 ## example code for three facts to see threshold
 #predDF.RF = generateThreshVsPerfData(pred[[1]], measures = list(fpr, tpr, mmce))
 #plotROCCurves(predDF.RF)
