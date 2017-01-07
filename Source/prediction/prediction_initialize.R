@@ -39,7 +39,7 @@ data_factors = as.data.frame(readRDS("data/final/factorAttributes_FINAL.rds"))[r
 data_strings = as.data.frame(readRDS("data/final/stringData_FINAL.rds"))[rownames(data_numeric),]
 data_dates   = as.data.frame(readRDS("data/final/dateData_FINAL.rds"))[rownames(data_numeric),] #f
 data_boolean = as.data.frame(readRDS("data/final/booleanAttributes_FINAL.rds"))[rownames(data_numeric),]
-data_target  = as.data.frame(read.csv("data/target.csv"))[rownames(data_numeric),] #f #full train records
+data_target  = as.data.frame(readRDS("data/target.rds"))[rownames(data_numeric),] #f #full train records
 
 mydata <- cbind(data_numeric,data_factors,data_strings,data_dates,data_boolean, data_target)
 colnames(mydata)[ncol(mydata)]="target"
