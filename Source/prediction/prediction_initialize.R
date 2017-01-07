@@ -31,7 +31,7 @@ library(foreach)
 
 source("Source/prediction/prediction_data_functions.r")
 source("Source/prediction/prediction_functions.R")
-source("Source/prediction/prediction_helperFUnctions.R")
+source("Source/prediction/prediction_helperFunctions.R")
 
 data_numeric = buildNumericData(c(3)) #imputed sample just in part 3
 
