@@ -72,5 +72,5 @@ saveRDS(rf_300_40_20, "models/imputed/rf_600_40_10.rds")
 
 
 #### # todo
-rf_600_40_1 = buildRF(classif.task,train.set,test.set,list(ntree=150,mtry=40,nodesize=11)) # done by MHO
+rf_600_40_1 = buildRF(classif.task,train.set,test.set,list(ntree=150,mtry=40,nodesize=1)) # done by MHO
 saveRDS(rf_600_40_1, "data/prediction/rf_600_40_1.rds")
