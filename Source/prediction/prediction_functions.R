@@ -63,21 +63,19 @@ buildRPART <- function(data,task,train,test,pars=list()){
 ############################################################################################################
 doParamOptimizationRPART <- function(task,minsplitvector,minbucketvector,cpvector){
   classif.lrn.RPART = makeLearner("classif.rpart", predict.type = "prob", fix.factors.prediction = TRUE)
-  cluster = makeCluster(parallel::detectCores(), type="SOCK")
-  set_cv <- makeResampleDesc("CV",iters = 3L)
+  parallelStartSocket(2)
   
-  gs <- makeParamSet(
+  ps <- makeParamSet(
     makeDiscreteParam("minsplit",values = minsplitvector),
     makeDiscreteParam("minbucket", values = minbucketvector),
     makeDiscreteParam("cp", values= cpvector )
   )
-  
-  gscontrol <- makeTuneControlGrid()
+  rdesc <- makeResampleDesc("CV",iters = 3L)
+  ctrl <- makeTuneControlGrid()
   #hypertune the parameters
-  registerDoSNOW(cluster)
-  stune <- tuneParams(learner = classif.lrn.RPART, resampling = set_cv, task = task, par.set = gs, control = gscontrol)
-  stopCluster(cluster)
-  stune
+  res <- tuneParams(learner = classif.lrn.RPART, resampling = rdesc, task = task, par.set = ps, control = ctrl)
+  parallelStop()
+  res
   #for minsplit in 10:50, minbucket5:50, cp 0.001:0.001 [Tune] Result: minsplit=23; minbucket=8; cp=0.000991 : acc.test.mean=0.772
 }
 doParamOptimizationRF <- function(task,ntreevector,mtryvector){
@@ -93,12 +91,13 @@ doParamOptimizationRF <- function(task,ntreevector,mtryvector){
   parallelStop()
   res
 }
-doParamOptimizationXG = function(task,etavector,maxdepthvecotr,colsamplevector,subsamplevector){
+doParamOptimizationXG = function(task,roundsvector,etavector,maxdepthvector,colsamplevector,subsamplevector){
   classif.lrn.XG = makeLearner("classif.xgboost", predict.type = "prob", fix.factors.prediction = TRUE)
   parallelStartSocket(2)
   ps = makeParamSet(
+    makeDiscreteParam("nrounds", values=roundsvector),
     makeDiscreteParam("eta", values=etavector),
-    makeDiscreteParam("max_depth", values=maxdepthvecotr),
+    makeDiscreteParam("max_depth", values=maxdepthvector),
     makeDiscreteParam("colsample_bytree", values=colsamplevector),
     makeDiscreteParam("subsample", values=subsamplevector)
   )
