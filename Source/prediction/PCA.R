@@ -12,12 +12,9 @@ for (i in 1:ncol(train_imputed)) {
   train_imputed_normalized[,i] = (train_imputed_normalized[,i]-mean(train_imputed_normalized[,i]))/sd(train_imputed_normalized[,i])
 }
 
-pcaRes = princomp(train_imputed[complete.cases(train_imputed),], cor = TRUE) # use this for further analysis
+pcaRes = prcomp(train_imputed[complete.cases(train_imputed),], cor = TRUE) # use this for further analysis
 
-
-
-pcaResNormalized = princomp(train_imputed_normalized, cor = FALSE)
-
+pcaResNormalized = prcomp(train_imputed_normalized)
 
 # do some plotting
 plotData = as.data.frame(cbind(id = seq_along(pcaRes$sdev), sdev = pcaRes$sdev))
