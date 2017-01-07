@@ -49,10 +49,10 @@ for(i in 1:ncol(testNumerical)){
 ##############################################
 # NUMERICAL DATA
 # numerical data has to be imputed
+source("source/imputation/mi_imputation_helperFunctions.R")
 naCorMat <- getMissingnesPatternCorMat(testNumerical)
 pearson = cor(testNumerical, use = "pairwise.complete.obs")
 pearson[is.na(pearson)] = 0
-source("source/CorrelationHelper.R")
 miNACorMat <- buildMiceMatrix(pearson,5,naCorMat,0.7)
 row.names(miNACorMat) = colnames(testNumerical)
 colnames(miNACorMat) = colnames(testNumerical)

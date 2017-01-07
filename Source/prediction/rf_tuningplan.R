@@ -1,7 +1,16 @@
 ######################################################
-# 1st check mtry with ntree = 300
+# 1st check mtry with ntree = 300 
 #rf300_30 #done by MC by param_tune
 # rf300_40 #done by MC by param_tune
+ntree = floor(ntree/parallel::detectCores())
+
+time = Sys.time()
+rf300_40 = buildRF(mydata,classif.task,train.set,test.set,list(ntree=75,mtry=40))#todo by MC 
+diff = Sys.time() - time
+saveRDS(rf300_40, "data/prediction/rf300_40.rds")
+saveRDS(diff, "data/prediction/rf300_40_time.rds")
+
+
 time = Sys.time()
 rf300_50 = buildRF(mydata,classif.task,train.set,test.set,list(ntree=75,mtry=50))#todo by MC 
 diff = Sys.time() - time
