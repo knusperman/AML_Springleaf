@@ -28,6 +28,20 @@ source("Source/imputation/mi_imputation.R")
 source("source/imputation/mi_imputation_helperFunctions.R")
 df <- readRDS("data/numeric imputations/impsplit1.rds")
 naCorMat <- getMissingnesPatternCorMat(df)
+saveRDS(naCorMat, "data/naCorMat.rds")
+
+plotMat = naCorMat
+plotMat[is.na(plotMat)] = 0
+require(corrplot)
+png("fig/missingnessCorrplot.png", height = 800, width = 800)
+corrplot(plotMat, method = "color", tl.pos = "n", ylab = "", xlab = "", 
+         order = "AOE", cl.cex = 3)
+dev.off()
+png("fig/missingnessCorrplot_unordered.png", height = 800, width = 800)
+corrplot(plotMat, method = "color", tl.pos = "n", ylab = "", xlab = "", 
+         order = "original", cl.cex = 3)
+dev.off()
+
 
 spearman <- readRDS("data/spearman_without1.rds")
 spearman <- spearman[which(colnames(spearman) %in% colnames(df)),which(colnames(spearman) %in% colnames(df))] # to be sure to select only top correlations that are in current set
@@ -182,6 +196,8 @@ differences = c(diff1, diff2, diff3, diff4, diff5, diff6, diff7, diff8, diff9, d
 # diff9 is in seconds
 differences[-9] = differences[-9]*60
 
+saveRDS(differences, "data/differencesImpuSpeed.rds")
+
 differencesPlotData = as.data.frame(cbind(SetSize = rep(c("8 Attributes", "16 Attributes", "32 Attributes", "64 Attributes"), times = 3),
                                           Duration = c(differences),
                                           Method = c(rep("MI parallel", 4),  rep("MI sequential", 4), 
@@ -190,9 +206,9 @@ differencesPlotData[,1] = factor(differencesPlotData[,1], levels = c("8 Attribut
 differencesPlotData[,2] = as.numeric(differencesPlotData[,2])
 differencesPlotData[,3] = factor(differencesPlotData[,3], levels = unique(differencesPlotData[,3]))
 
-png("fig/imputation_speed.png", height = 800, width = 800)
+png("fig/imputation_speed.png", height = 800, width = 1500)
 ggplot(data = differencesPlotData, aes(x = SetSize, y = Duration, group = Method)) + 
-  geom_line(aes(colour = Method), size = 2) + geom_abline(slope = 1, intercept = 0, size = 2) +
+  geom_line(aes(colour = Method), size = 3) + geom_abline(slope = 1, intercept = 0, size = 2) +
   xlab("Sample size") + ylab("Duration in seconds") + theme_bw() +
   theme(axis.text = element_text(size = 40, colour = "black", angle = 45, hjust = 1), 
         axis.title = element_text(size = 40, colour = "black")) +

@@ -18,18 +18,11 @@ for (i in 1:ncol(numericalData)) {
 remove(trainData)
 remove(numericals)
 
-# exclude features with more than 90% NAs
-#nas = apply(numericalData, 2, function(x) {
-#  sum(is.na(x))/length(x)
-#})
-#numericalData = numericalData[,!nas > 0.90]
 
 naCorMat <- getMissingnesPatternCorMat(numericalData)
+spearman <- readRDS("data/spearman_without1.rds")
+spearman <- spearman[which(colnames(spearman) %in% colnames(df)),which(colnames(spearman) %in% colnames(df))] # to be sure to select only top correlations that are in current set
 
-# take pearson here because it takes less time
-pearson = cor(numericalData, use = "pairwise.complete.obs")
-pearson[is.na(pearson)] = 0
-saveRDS(pearson, "data/tempPearson.rds")
 
 miNACorMat <- buildMiceMatrix(pearson,5,naCorMat,0.7)
 row.names(miNACorMat) = colnames(numericalData)
