@@ -38,7 +38,7 @@ mydata <- buildDataSet(c(3)) # 3 indicates the third data sample part, which is 
 classif.task = makeClassifTask(id = "mtc", data = mydata, target = "target", positive="1")
 
 set.seed(1234)
-n = getTaskSize(classif.task) #size of data
+n = getTaskSize(classif_task) #size of data
 train.set = sample(n, size = n*0.9)
 test.set = 1:n
 test.set <- test.set[-which(test.set %in% train.set)]

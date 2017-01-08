@@ -122,7 +122,7 @@ doParamTuningRPART <- function(task,minsplitvector,minbucketvector,cpvector){
   res
   #for minsplit in 10:50, minbucket5:50, cp 0.001:0.001 [Tune] Result: minsplit=23; minbucket=8; cp=0.000991 : acc.test.mean=0.772
 }
-doParamTuningRF <- function(task,ntreevector,mtryvector){
+doParamTuningRF <- function(task,ntreevector,mtryvector){ #not used due to computational complexity--> direct fit on train sample and evaluation on test
   parallelStartSocket(2)
   classif.lrn.RF = makeLearner("classif.randomForest", predict.type = "prob", fix.factors.prediction = TRUE)
   ps <- makeParamSet(
@@ -168,18 +168,18 @@ doParamRandomTuningRPART <- function(task){
   res
   # [Tune] Result: minsplit=23; minbucket=8; cp=0.000991 : acc.test.mean=0.772
 }
-doParamRandomTuningXG = function(task){
+doParamRandomTuningXG = function(task, nrounds, etalow, etahigh, max_depth){
   classif.lrn.XG = makeLearner("classif.xgboost", predict.type = "prob", fix.factors.prediction = TRUE)
   parallelStartSocket(2)
   ps = makeParamSet(
-    makeDiscreteParam("nrounds", values=15),
-    makeNumericParam("eta", lower = 0.1, upper = 0.3),
-    makeIntegerParam("max_depth", lower = 4, upper = 12),
-    makeIntegerParam("colsample_bytree", lower = 0.3, upper = 0.9),
-    makeIntegerParam("subsample", lower = 0.3, upper = 0.9)
+    makeDiscreteParam("nrounds", values=nrounds),
+    makeNumericParam("eta", lower = etalow, upper = etahigh),
+    makeDiscreteParam("max_depth",values = max_depth),
+    makeIntegerParam("colsample_bytree", lower = 0.5, upper = 1),
+    makeIntegerParam("subsample", lower = 0.5, upper = 1)
   )
   rdesc = makeResampleDesc("CV", iters = 3L) 
-  ctrl =  makeTuneControlRandom(maxit = 50) 
+  ctrl =  makeTuneControlRandom(maxit = 20) 
   res = tuneParams(classif.lrn.XG, task = task, resampling = rdesc, par.set = ps, control = ctrl)
   parallelStop()
   res
