@@ -1,4 +1,4 @@
-source("Source/prediction/prediction_initialize.R")
+source("Source/prediction/prediction_intialize.R")
 #build 10k subset
 train.set <- train.set[1:9000]
 test.set <- test.set[1:1000]
@@ -29,3 +29,6 @@ svm10kpred = predict(svm10k, task = classif.task.10k, subset = test.set)
 print("SVM: AUC -- TIME ")
 paste(mlr::performance(svm10kpred, auc), "--", svm10k$time/60, " min")
 saveRDS(svm10k, "svm10k.rds")
+
+# repeat for the PCA transformed set to show performance increase
+
