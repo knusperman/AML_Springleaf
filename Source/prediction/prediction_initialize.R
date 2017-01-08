@@ -29,29 +29,10 @@ library(doSNOW)
 library(randomForest)
 library(foreach)
 
-source("Source/prediction/prediction_data_functions.r")
 source("Source/prediction/prediction_functions.R")
 source("Source/prediction/prediction_helperFunctions.R")
 
-data_numeric = buildNumericData(c(3)) #imputed sample just in part 3
-
-data_factors = as.data.frame(readRDS("data/final/factorAttributes_FINAL.rds"))[rownames(data_numeric),] #full train records. no NAs b/c treated as level
-data_strings = as.data.frame(readRDS("data/final/stringData_FINAL.rds"))[rownames(data_numeric),]
-data_dates   = as.data.frame(readRDS("data/final/dateData_FINAL.rds"))[rownames(data_numeric),] #f
-data_boolean = as.data.frame(readRDS("data/final/booleanAttributes_FINAL.rds"))[rownames(data_numeric),]
-data_target  = as.data.frame(readRDS("data/target.rds"))[rownames(data_numeric),] #f #full train records
-
-mydata <- cbind(data_numeric,data_factors,data_strings,data_dates,data_boolean, data_target)
-colnames(mydata)[ncol(mydata)]="target"
-mydata$target <- as.factor(mydata$target)
-
-dim(mydata)
-#cleaning the environment
-remove(data_numeric, data_factors,data_strings,data_dates,data_boolean,data_target)
-
-#remove cols you do not want right now
-#mydata <- mydata[,-which(colnames(mydata) %in% collist$cols_dates)]
-
+mydata <- buildDataSet(c(3)) # 3 indicates the third data sample part, which is used for training (45k records)
 
 ###MLR Setup
 classif.task = makeClassifTask(id = "mtc", data = mydata, target = "target", positive="1")

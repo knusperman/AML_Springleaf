@@ -1,3 +1,21 @@
+
+buildDataSet <- function(numericparts){
+  data_numeric = buildNumericData(numericparts) #imputed sample for training just in part 3
+  
+  data_factors = as.data.frame(readRDS("data/final/factorAttributes_FINAL.rds"))[rownames(data_numeric),] #full train records. no NAs b/c treated as level
+  data_strings = as.data.frame(readRDS("data/final/stringData_FINAL.rds"))[rownames(data_numeric),]
+  data_dates   = as.data.frame(readRDS("data/final/dateData_FINAL.rds"))[rownames(data_numeric),] #f
+  data_boolean = as.data.frame(readRDS("data/final/booleanAttributes_FINAL.rds"))[rownames(data_numeric),]
+  data_target  = as.data.frame(readRDS("data/target.rds"))[rownames(data_numeric),] #f #full train records
+  
+  mydata <- cbind(data_numeric,data_factors,data_strings,data_dates,data_boolean, data_target)
+  colnames(mydata)[ncol(mydata)]="target"
+  mydata$target <- as.factor(mydata$target)
+  #cleaning the environment
+  remove(data_numeric, data_factors,data_strings,data_dates,data_boolean,data_target)
+  mydata
+}
+
 ############################################################################################################
 ###################################### BUILD FUNCTIONS #####################################################
 ############################################################################################################
@@ -57,6 +75,32 @@ buildRPART <- function(task,train,test,pars=list()){
   auc <- mlr::performance(pred.RPART, auc)
   
   list(model=mod.RPART,predictions=pred.RPART,auc=auc)
+}
+buildSVM <- function(task,train,test,pars=list()){
+  classif.lrn.SVM = makeLearner("classif.svm", predict.type = "prob", fix.factors.prediction = TRUE)
+  mod.SVM = train(classif.lrn.SVM, task, subset = train)
+  pred.SVM = predict(mod.SVM, task = task, subset = test)
+  auc <- mlr::performance(pred.SVM, auc) #0.7218
+  list(model=mod.SVM,predictions=pred.SVM,auc=auc)
+}
+buildKNN <- function(task,train,test,pars=list()){
+  classif.lrn.kknn = makeLearner("classif.kknn", predict.type = "prob", fix.factors.prediction = TRUE)
+  classif.lrn.kknn$par.set
+  mod.kknn = train(classif.lrn.kknn, task, subset = train)
+  pred.kknn  = predict(mod.kknn, task = task, subset = test)
+  auc = mlr::performance(pred.kknn,auc) #0.6187
+  list(model=mod.kknn, predictions = pred.kknn, auc=auc)
+}
+buildNNET <- function(task,train,test,pars=list()){
+
+  classif.lrn.nnet = makeLearner("classif.avNNet", predict.type = "prob", fix.factors.prediction = TRUE)
+  classif.lrn.nnet = setHyperPars(classif.lrn.nnet, MaxNWts = 35011) #max weights in sample
+  classif.lrn.nnet = setHyperPars(classif.lrn.nnet, size = 10) # cannot use size = 100 apparently (error message cannot allocate vector of size <some> kbs)
+  mod.nnet = train(classif.lrn.nnet, task)
+  pred.nnet = predict(mod.nnet, task=task,subset=test)
+  auc = mlr::performance(pred.nnet,auc) #0.5
+  list(model=mod.nnet, predictions = pred.nnet, auc=auc)
+  
 }
 ############################################################################################################
 ###################################### PARAMETER Tuning###############################################

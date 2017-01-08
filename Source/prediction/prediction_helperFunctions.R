@@ -5,7 +5,7 @@ getPlotAUC = function(pred) {
     theme(axis.text = element_text(size = 40, colour = "black"), 
           axis.title = element_text(size = 40, colour = "black")) +
     theme(plot.margin = unit(c(1,2,1,1), "cm")) + 
-    theme(legend.text = element_text(size = 40), legend.key.height = 1.5, legend.title = element_text(size = 40, face = "bold"))
+    theme(legend.text = element_text(size = 40), legend.key.size = unit(2,"cm"), legend.title = element_text(size = 40, face = "bold"))
   
   return(p)
 }
