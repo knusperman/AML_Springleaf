@@ -1,27 +1,38 @@
 #####################
+#prior random search
+randomXG1 <- doParamRandomTuningXG(classif_task,nrounds = 1 ,etalow=0.1,etahigh=0.3,max_depth = c(6,7,8,9))
+#results:
+#$eta = 0.1536837 max_depth = 6 colsample_bytree = 0.6700221 $subsample = 0.9047795
+randomXG2 <- doParamRandomTuningXG(classif_task,nrounds = 20 ,etalow=0.1,etahigh=0.3,max_depth = c(6,7,8,9))
+#results:
+#$eta = 0.1690215 max_depth = 8 colsample_bytree = 0.748096 $subsample = [1] 0.9325617
+randomXG3 <- doParamRandomTuningXG(classif_task,nrounds= 20 ,etalow=0.05,etahigh=0.15,max_depth = c(6,7,8,9))
+#results:
+#$eta = 0.1374282 max_depth = 6 colsample_bytree = 0.857983 $subsample = 0.728183
+
 # grid searches
-#DONE on MCs mbp
-xgtune1 <- doParamTuningXG(classif.task, roundsvector = c(10,20,50,100), etavector = c(0.15), maxdepthvector = c(5,10,15),colsamplevector = c(0.5), subsamplevector = c(0.8))
+#first: widespread
+xgtune1 <- doParamTuningXG(classif_task, roundsvector = c(10,20,50,100), etavector = c(0.15), maxdepthvector = c(5,10,15),colsamplevector = c(0.5), subsamplevector = c(0.8))
 saveRDS(xgtune1,"models/imputed/xgtune1.rds")
 #results:
 # nrounds = 50, eta = 0.15, max_depth = 5, colsample = .5, subsample = .8
 
 #next: fix nrounds to 50 and tune eta and max_depth further
-xgtune2 <- doParamTuningXG(classif.task, roundsvector = c(50), etavector = c(0.1,0.15,0.2), maxdepthvector = c(4,5,6),colsamplevector = c(0.5), subsamplevector = c(0.8))
+xgtune2 <- doParamTuningXG(classif_task, roundsvector = c(50), etavector = c(0.1,0.15,0.2), maxdepthvector = c(4,5,6),colsamplevector = c(0.5), subsamplevector = c(0.8))
 saveRDS(xgtune2,"models/imputed/xgtune2.rds")
 #results:
 # nrounds = 50, eta = 0.2, max_depth = 4, colsample = .5, subsample = .8
 # rounds changed! now eta goes up to 0.2 (?), maxdepth down to miniumum value of 4.
 
 #next: vary eta further and max_depth further . 
-xgtune3 <- doParamTuningXG(classif.task, roundsvector = c(50), etavector = c(0.15,0.25), maxdepthvector = c(3,4,5),colsamplevector = c(0.5), subsamplevector = c(0.8))
+xgtune3 <- doParamTuningXG(classif_task, roundsvector = c(50), etavector = c(0.15,0.25), maxdepthvector = c(3,4,5),colsamplevector = c(0.5), subsamplevector = c(0.8))
 saveRDS(xgtune3,"models/imputed/xgtune3.rds")
 # results:
 # nrounds = 50, eta = 0.15, max_depth = 4, colsample =.5, subsample = .8
 # maxdepth stays at 4, eta goes down to 0.15.
 
 #next: change colsample and subsample
-xgtune4 <- doParamTuningXG(classif.task, roundsvector = c(50), etavector = c(0.15), maxdepthvector = c(4),colsamplevector = c(0.5,0.6,0.7), subsamplevector = c(0.6,0.7,0.8))
+xgtune4 <- doParamTuningXG(classif_task, roundsvector = c(50), etavector = c(0.15), maxdepthvector = c(4),colsamplevector = c(0.5,0.6,0.7), subsamplevector = c(0.6,0.7,0.8))
 saveRDS(xgtune4,"models/imputed/xgtune4.rds")
 #results:
 # nrounds = 50, 0.15, 4, colsample_bytree = .5, subsample = .8
@@ -31,14 +42,14 @@ saveRDS(xgtune4,"models/imputed/xgtune4.rds")
 
 ######################
 # another idea: try out high number of rounds and see what happends to eta
-xgtune_high1 <- doParamTuningXG(classif.task, roundsvector =c(100), etavector=c(0.1,0.15,0.2), maxdepthvector = c(6),colsamplevector = c(0.5),subsamplevector = c(0.8))
+xgtune_high1 <- doParamTuningXG(classif_task, roundsvector =c(100), etavector=c(0.1,0.15,0.2), maxdepthvector = c(6),colsamplevector = c(0.5),subsamplevector = c(0.8))
 saveRDS(xgtune_high1,"models/imputed/xgtune_high1.rds")
 #results
 # nrounds = 100, eta = 0.1, max_depth = 6, colsample = .5, subsample = .8
 # eta at minimum
 
 # next: try more granular values for eta and check maxdepth
-xgtune_high2 <- doParamTuningXG(classif.task, roundsvector =c(100), etavector=c(0.05,0.075,0.1), maxdepthvector = c(5,6,7),colsamplevector = c(0.5),subsamplevector = c(0.8))
+xgtune_high2 <- doParamTuningXG(classif_task, roundsvector =c(100), etavector=c(0.05,0.075,0.1), maxdepthvector = c(5,6,7),colsamplevector = c(0.5),subsamplevector = c(0.8))
 saveRDS(xgtune_high2,"models/imputed/xgtune_high2.rds")
 #results
 # nrounds = 100, eta = 0.075, max_depth = 7, colsample_bytree = .5, subsample = .8
@@ -46,7 +57,7 @@ saveRDS(xgtune_high2,"models/imputed/xgtune_high2.rds")
 # try out varying maxdepth on sample!
 
 #next: try out how 200 trees perform
-xgtune_high3 <- doParamTuningXG(classif.task, roundsvector =c(200), etavector=c(0.05,0.075), maxdepthvector = c(5,6,7),colsamplevector = c(0.5),subsamplevector = c(0.8))
+xgtune_high3 <- doParamTuningXG(classif_task, roundsvector =c(200), etavector=c(0.05,0.075), maxdepthvector = c(5,6,7),colsamplevector = c(0.5),subsamplevector = c(0.8))
 saveRDS(xgtune_high3,"models/imputed/xgtune_high3.rds")
 #results
 # nrounds = 200, eta = 0.05, max_depth = 5, colsample: .5, subsample =.8
@@ -59,14 +70,16 @@ saveRDS(xgtune_high3,"models/imputed/xgtune_high3.rds")
 xgtune1 <- readRDS("models/imputed/xgtune1.rds")#on mcs mbp
 xgtune2 <- readRDS("models/imputed/xgtune2.rds")
 xgtune3 <- readRDS("models/imputed/xgtune3.rds")
-xgtune4 <- readRDS("models/imputed/xgtune4.rds")
+xgtune4 <- readRDS("models/imputed/xgtune4.rds") # == same as xgtune3 as colsample, subsample did not change
 xgtune2$x$eval_metric ="auc"
 xgtune3$x$eval_metric ="auc"
 xgtune4$x$eval_metric ="auc"
-
-xg2 <- buildXG(classif.task,train.set,test.set,xgtune3$x) #auc = 0.7613
-xg3 <- buildXG(classif.task,train.set,test.set,xgtune3$x) #auc = 0.7614
-xg4 <- buildXG(classif.task,train.set,test.set,xgtune4$x) #auc = 0.7645
+set.seed(1234)
+xg2 <- buildXG(classif_task,train.set,test.set,xgtune2$x) #auc = 0.7605456
+set.seed(1234)
+xg3 <- buildXG(classif_task,train.set,test.set,xgtune3$x) #auc = 0.7629712
+set.seed(1234)
+xg4 <- buildXG(classif_task,train.set,test.set,xgtune4$x) #auc = 0.7629712 == same as xgtune3 as colsample, subsample did not change
 
 xgtune_high1 <- readRDS("models/imputed/xgtune_high1.rds")
 xgtune_high2 <- readRDS("models/imputed/xgtune_high2.rds")
@@ -74,15 +87,78 @@ xgtune_high3 <- readRDS("models/imputed/xgtune_high3.rds")
 xgtune_high1$x$eval_metric ="auc"
 xgtune_high2$x$eval_metric ="auc"
 xgtune_high3$x$eval_metric ="auc"
-xghigh1 <- buildXG(classif.task,train.set,test.set,xgtune_high1$x)#auc = 0.7665
-xghigh2 <- buildXG(classif.task,train.set,test.set,xgtune_high2$x)#auc = 0.7630
-xghigh3 <- buildXG(classif.task,train.set,test.set,xgtune_high3$x)#auc = 0.7670
+set.seed(1234)
+xghigh1 <- buildXG(classif_task,train.set,test.set,xgtune_high1$x)#auc = 0.7601221
+set.seed(1234)
+xghigh2 <- buildXG(classif_task,train.set,test.set,xgtune_high2$x)#auc = 0.7656591
+set.seed(1234)
+xghigh3 <- buildXG(classif_task,train.set,test.set,xgtune_high3$x)#auc = 0.7715333
 
+#now check how AUC changes with increased max depth
+xgtune_high2depth <- xgtune_high2
+xgtune_high2depth$x$max_depth = 8 
+set.seed(1234)
+xghigh2depth <- buildXG(classif_task,train.set,test.set,xgtune_high2depth$x)#auc = 0.7600198 -- worse than initial setting with depth 7.
 
-
-xgtune4rounds<- xgtune_high3$x
+xgtune4rounds<- xgtune_high3$x #take high3 with auc = 0.7670
 xgtune4rounds$nrounds = 180
-xg4tune4roundsfit =  buildXG(classif.task,train.set,test.set,xgtune4rounds) #auc = 0.7701
-xgtune4rounds$nrounds = 160
-xg4tune4roundsfit =  buildXG(classif.task,train.set,test.set,xgtune4rounds) #auc = 0.7
+set.seed(1234)
+xg4tune4roundsfit =  buildXG(classif_task,train.set,test.set,xgtune4rounds) #auc = 0.7701 -- better than 0.7670
+xgtune4rounds2 <- xgtune_high3$x
+xgtune4rounds2$nrounds = 160
+set.seed(1234)
+xg4tune4roundsfit =  buildXG(classif_task,train.set,test.set,xgtune4rounds2) #auc = 0.7692 -- worse than 180 version. take 180. 
+### now check eta
+xgtune4rounds_eta = xgtune4rounds
+xgtune4rounds_eta$eta = 0.04 #instead of 0.05
+set.seed(1234)
+xg4tune4rounds_etafit =  buildXG(classif_task,train.set,test.set,xgtune4rounds_eta) #auc = 0.7691 -- worse than 0.7701.
+### now check max_depth 
+xgtune4rounds_eta_depth = xgtune4rounds
+xgtune4rounds_eta_depth$max_depth = 4
+set.seed(1234)
+xg4tune4rounds_etadepthfit = buildXG(classif_task,train.set,test.set,xgtune4rounds_eta_depth) #auc = 0.7681 -- worse than 0.7701
+##########################################
+##########################################
+### FINAL XGBOOST TUNING: xgtune_high3 with 180 rounds instead of 200: 
+#nrounds =180, eta = 0.05,  max_depth = 5, colsample: .5, subsample =.8
+xgboostfinalparameters <- list(nrounds=180,eta=0.05,max_depth=5,colsample_bytree=0.5,subsample=0.8, eval_metric="auc")
+saveRDS(xgboostfinalparameters, "models/imputed/xg_tunedparams.rds")
 
+classif_task = classif.task
+xgboostfinal = buildXG(classif_task, train.set,test.set, xgboostfinalparameters)
+set.seed(1234)
+xgboostfinal = buildXG(classif_task, train.set,test.set, xgboostfinalparameters)
+<<<<<<< HEAD
+
+saveRDS(xgboostfinal, "models/imputed/xgboost_tuned.rds")
+
+
+# customized grid search #MC
+nrounds = c(100)
+eta = c(0.01, 0.015)
+max_depth = c(5, 6, 7, 8, 9, 10)
+colsample = c(0.5, 0.6, 0.7)
+subsample = 0.8
+tuneResults1 = customXGBoostTune(classif_task, train.set,test.set, 
+                                nrounds, eta, max_depth, colsample, subsample)
+
+nrounds = c(150) #MC
+eta = c(0.01, 0.015)
+max_depth = c(5, 6, 7, 8, 9, 10)
+colsample = c(0.5, 0.6, 0.7)
+subsample = 0.8
+tuneResults2 = customXGBoostTune(classif_task, train.set,test.set, 
+                                nrounds, eta, max_depth, colsample, subsample)
+
+nrounds = c(200) #MH
+eta = c(0.01, 0.015)
+max_depth = c(5, 6, 7, 8, 9, 10)
+colsample = c(0.5, 0.6, 0.7)
+subsample = 0.8
+tuneResults2 = customXGBoostTune(classif_task, train.set,test.set, 
+                                 nrounds, eta, max_depth, colsample, subsample)
+=======
+
+saveRDS(xgboostfinal, "models/imputed/xgboost_tuned.rds")
+>>>>>>> e899e6414cadcf9479b77577bf92b9332a44d9c3

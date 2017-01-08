@@ -30,17 +30,14 @@ library(randomForest)
 library(foreach)
 
 source("Source/prediction/prediction_functions.R")
-source("Source/prediction/prediction_helperFunctions.R")
 
 mydata <- buildDataSet(c(3)) # 3 indicates the third data sample part, which is used for training (45k records)
 
 ###MLR Setup
-classif.task = makeClassifTask(id = "mtc", data = mydata, target = "target", positive="1")
+classif_task = makeClassifTask(id = "mtc", data = mydata, target = "target", positive="1")
 
 set.seed(1234)
-n = getTaskSize(classif.task) #size of data
+n = getTaskSize(classif_task) #size of data
 train.set = sample(n, size = n*0.9)
 test.set = 1:n
 test.set <- test.set[-which(test.set %in% train.set)]
-
-

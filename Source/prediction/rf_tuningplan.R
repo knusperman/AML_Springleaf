@@ -4,6 +4,8 @@
 # rf300_40 #done by MC by param_tune
 #ntree = floor(ntree/parallel::detectCores())
 
+source("source/prediction/prediction_initialize.R")
+
 rf300_40 = buildRF(classif.task,train.set,test.set,list(ntree=floor(300/parallel::detectCores()),mtry=40))#done by MH 0.7520
 saveRDS(rf300_40, "models/imputed/rf300_40.rds")
 
@@ -58,3 +60,9 @@ saveRDS(rf_300_40_20, "models/imputed/rf_600_40_10.rds")
 
 rf_600_40_1 = buildRF(classif.task,train.set,test.set,list(ntree=floor(600/parallel::detectCores()),mtry=40,nodesize=1)) # done by MHO AUC 0.7499
 saveRDS(rf_600_40_1, "models/imputed/rf_600_40_1.rds")
+
+
+
+rf_500_40_10 = buildRF(classif_task,train.set,test.set,
+                      list(ntree=floor(500/parallel::detectCores()),
+                           mtry=40, nodesize=10, importance = TRUE))
