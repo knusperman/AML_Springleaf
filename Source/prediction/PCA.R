@@ -63,26 +63,3 @@ which(cumsum(sdev) > sumsdev)[1] #453
 # transform data
 train_transformed = pcaResNormalized$x[,1:453]
 saveRDS(train_transformed, "data/PCA_transformed_set.rds")
-
-# try prediction based on our transformed data
-library(xgboost)
-library(mlr)
-
-data_factors = as.data.frame(readRDS("data/final/factorAttributes_FINAL.rds"))[rownames(train_transformed),] #full train records. no NAs b/c treated as level
-data_strings = as.data.frame(readRDS("data/final/stringData_FINAL.rds"))[rownames(train_transformed),]
-data_dates   = as.data.frame(readRDS("data/final/dateData_FINAL.rds"))[rownames(train_transformed),] #f
-data_boolean = as.data.frame(readRDS("data/final/booleanAttributes_FINAL.rds"))[rownames(train_transformed),]
-data_target  = as.data.frame(readRDS("data/target.rds"))[rownames(train_transformed),] #f #full train records
-mydata <- cbind(train_transformed,data_factors,data_strings,data_dates,data_boolean, data_target)
-colnames(mydata)[ncol(mydata)]="target"
-
-mydata_sample = mydata[sample(1:nrow(train_transformed), 45000),]
-
-
-classif.task = makeClassifTask(id = "mtc", data = mydata_sample, target = "target", positive="1")
-
-set.seed(1234)
-n = getTaskSize(classif.task) #size of data
-train.set = sample(n, size = n*0.9)
-test.set = 1:n
-test.set <- test.set[-which(test.set %in% train.set)]

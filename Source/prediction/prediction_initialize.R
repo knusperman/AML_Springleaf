@@ -30,7 +30,6 @@ library(randomForest)
 library(foreach)
 
 source("Source/prediction/prediction_functions.R")
-source("Source/prediction/prediction_helperFunctions.R")
 
 mydata <- buildDataSet(c(3)) # 3 indicates the third data sample part, which is used for training (45k records)
 

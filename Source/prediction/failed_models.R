@@ -1,5 +1,5 @@
 source("Source/prediction/prediction_initialize.R")
-svm <- buildSVM(task = classif.task,train.set,test.set) 
-knn <- buildKNN(task = classif.task,train.set,test.set)
-nnet <- buildNNET(task = classif.task,train.set,test.set)
+svm <- buildSVM(task = classif_task,train.set,test.set) 
+knn <- buildKNN(task = classif_task,train.set,test.set)
+nnet <- buildNNET(task = classif_task,train.set,test.set)
 #Logistic regression only takes hours but is not able to return a model (algorithm does not converge)
