@@ -129,5 +129,36 @@ classif_task = classif.task
 xgboostfinal = buildXG(classif_task, train.set,test.set, xgboostfinalparameters)
 set.seed(1234)
 xgboostfinal = buildXG(classif_task, train.set,test.set, xgboostfinalparameters)
+<<<<<<< HEAD
 
 saveRDS(xgboostfinal, "models/imputed/xgboost_tuned.rds")
+
+
+# customized grid search #MC
+nrounds = c(100)
+eta = c(0.01, 0.015)
+max_depth = c(5, 6, 7, 8, 9, 10)
+colsample = c(0.5, 0.6, 0.7)
+subsample = 0.8
+tuneResults1 = customXGBoostTune(classif_task, train.set,test.set, 
+                                nrounds, eta, max_depth, colsample, subsample)
+
+nrounds = c(150) #MC
+eta = c(0.01, 0.015)
+max_depth = c(5, 6, 7, 8, 9, 10)
+colsample = c(0.5, 0.6, 0.7)
+subsample = 0.8
+tuneResults2 = customXGBoostTune(classif_task, train.set,test.set, 
+                                nrounds, eta, max_depth, colsample, subsample)
+
+nrounds = c(200) #MH
+eta = c(0.01, 0.015)
+max_depth = c(5, 6, 7, 8, 9, 10)
+colsample = c(0.5, 0.6, 0.7)
+subsample = 0.8
+tuneResults2 = customXGBoostTune(classif_task, train.set,test.set, 
+                                 nrounds, eta, max_depth, colsample, subsample)
+=======
+
+saveRDS(xgboostfinal, "models/imputed/xgboost_tuned.rds")
+>>>>>>> e899e6414cadcf9479b77577bf92b9332a44d9c3
