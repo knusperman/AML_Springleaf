@@ -214,7 +214,7 @@ customXGBoostTune = function(task,train,test,
                              nrounds, etas, max_depths, colsamples, subsamples) {
   grid = expand.grid(nrounds, etas, max_depths, colsamples, subsamples)
   results = list(grid = grid)
-  for (i in nrow(grid)) {
+  for (i in 1:nrow(grid)) {
     params = list(nrounds = grid[i,1], 
                   eta = grid[i,2],
                   max_depth = grid[i,3],
