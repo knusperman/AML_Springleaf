@@ -15,6 +15,7 @@ for (i in 1:ncol(train_imputed)) {
 pcaRes = prcomp(train_imputed[complete.cases(train_imputed),], cor = TRUE) # use this for further analysis
 
 pcaResNormalized = prcomp(train_imputed_normalized)
+saveRDS(pcaResNormalized$rotation, "data/PCA_PCs.rds")
 
 # do some plotting
 plotData = as.data.frame(cbind(id = seq_along(pcaRes$sdev), sdev = pcaRes$sdev))
