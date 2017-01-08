@@ -218,7 +218,7 @@ customXGBoostTune = function(task,train,test,
     params = list(nrounds = grid[i,1], 
                   eta = grid[i,2],
                   max_depth = grid[i,3],
-                  colsample_bytree = grid[ii4],
+                  colsample_bytree = grid[i,4],
                   subsample = grid[i,5])
     res = buildXG(task, train, test, params)
     results[[(i+1)]] = res
