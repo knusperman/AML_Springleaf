@@ -229,7 +229,13 @@ customXGBoostTune = function(task,train,test,
 # helper function to plot a heatmap to visualize the tuning results
 # requires data that has at least an x, a y and an auc column
 # x and y can be either "nrounds", "eta", "max_depth", "colsample" or "subsample"
+# takes the highest value for every combination of x and y
 plotHeatMap = function(data, x, y, xlab, ylab) {
+  combos = expand.grid(unique(x), unique(y))
+  plotData = as.data.frame(cbind(x = combos[,1], y = combos[,2], auc = numeric(nrow(combos))))
+  for (i in nrow(combos)) {
+    plotData[i,3] = max(data$auc[which(x == combos[i,1] & y == combos[i,2])])
+  }
   p = ggplot(data, aes(x = ordered(x), y = ordered(y), fill = auc)) + geom_tile(color = "white") +
     xlab(xlab) + ylab(ylab) + 
     theme_bw() +

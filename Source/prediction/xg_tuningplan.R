@@ -215,7 +215,14 @@ colnames(aucs) = c("nrounds", "eta", "max_depth", "colsample", "subsample", "auc
 aucs = rbind(auc1, auc2, auc4)
 write.csv(aucs, "data/xgboost_tuning.csv")
 
-png("fig/xgb_tuneResults.png", width = 800, height = 800)
+png("fig/xgb_tuneResults_nrounds_maxDepth.png", width = 800, height = 800)
 plotHeatMap(aucs, aucs$nrounds, aucs$max_depth, "nrounds", "max_depth")
 dev.off()
 
+png("fig/xgb_tuneResults_nrounds_eta.png", width = 800, height = 800)
+plotHeatMap(aucs, aucs$nrounds, aucs$eta, "nrounds", "eta")
+dev.off()
+
+png("fig/xgb_tuneResults_nrounds_colsample.png", width = 800, height = 800)
+plotHeatMap(aucs, aucs$nrounds, aucs$colsample, "nrounds", "colsample")
+dev.off()
