@@ -230,6 +230,22 @@ buildNumericData <- function(vec){
   data
 }
 
+customXGBoostTune = function(task,train,test,
+                             nrounds, etas, max_depths, colsamples, subsamples) {
+  grid = expand.grid(nrounds, etas, max_depths, colsamples, subsamples)
+  results = list(grid = grid)
+  for (i in 1:nrow(grid)) {
+    params = list(nrounds = grid[i,1], 
+                  eta = grid[i,2],
+                  max_depth = grid[i,3],
+                  colsample_bytree = grid[i,4],
+                  subsample = grid[i,5])
+    res = buildXG(task, train, test, params)
+    results[[(i+1)]] = res
+  }
+  return(results)
+}
+
 #check if rows correspond to sample, so that merge with factors etc. is correct:
 #s <- readRDS("data/sample.rds") #1 = 1:50000, 2 = 500001:100000, 3 = 100001:145231 in train set
 #s[c(1:5,50001:50005,100001:100005)] == rownames(data_numeric)[c(1:5,50001:50005,100001:100005)]
