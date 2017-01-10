@@ -32,12 +32,12 @@ baselineData = readRDS("data/final/baselineDataset.rds")
 
 colnames(mydata)[ncol(mydata)]="target"
 
+set.seed(1234)
 baselineData_sample = baselineData[sample(1:nrow(baselineData), 45000),]
 
 
 classif_task_baseline = makeClassifTask(id = "mtc", data = baselineData_sample, target = "target", positive="1")
 
-set.seed(1234)
 n = getTaskSize(classif_task_baseline) #size of data
 train.set = sample(n, size = n*0.9)
 test.set = 1:n

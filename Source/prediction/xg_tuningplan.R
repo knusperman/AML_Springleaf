@@ -1,3 +1,5 @@
+source("source/prediction/prediction_initialize.R")
+source("source/prediction/prediction_functions.R")
 #####################
 #prior random search
 randomXG1 <- doParamRandomTuningXG(classif_task,nrounds = 1 ,etalow=0.1,etahigh=0.3,max_depth = c(6,7,8,9))
@@ -132,7 +134,8 @@ xgboostfinal = buildXG(classif_task, train.set,test.set, xgboostfinalparameters)
 
 saveRDS(xgboostfinal, "models/imputed/xgboost_tuned.rds")
 
-# customized grid search #MC
+# customized grid search
+# this section is concerned with a more thorough tuning approach
 nrounds = c(100)
 eta = c(0.01, 0.015)
 max_depth = c(5, 6, 7, 8, 9, 10)
@@ -178,27 +181,48 @@ tuneResults5 = customXGBoostTune(classif_task, train.set,test.set,
                                  nrounds, eta, max_depth, colsample, subsample)
 saveRDS(tuneResults5, "data/tuneResults5.rds")
 
+nrounds = c(100, 150, 500, 1000) #MC
+eta = c(0.01, 0.015)
+max_depth = c(11, 12)
+colsample = c(0.5, 0.6, 0.7)
+subsample = 0.8
+tuneResults6 = customXGBoostTune(classif_task, train.set,test.set, 
+                                 nrounds, eta, max_depth, colsample, subsample)
+saveRDS(tuneResults6, "data/tuneResults6.rds")
+
 tuneResults1 = readRDS("data/tuneResults1.rds")
 tuneResults2 = readRDS("data/tuneResults2.rds")
 tuneResults3 = readRDS("data/tuneResults3.rds")
 tuneResults4 = readRDS("data/tuneResults4.rds")
 tuneResults5 = readRDS("data/tuneResults5.rds")
+tuneResults6 = readRDS("data/tuneResults6.rds")
 colnames(tuneResults1$grid) = c("nrounds", "eta", "max_depth", "colsample", "subsample")
-colnames(tuneResults2$grid) = c("nrounds", "eta", "max_depth", "colsample", "subsample")
-colnames(tuneResults3$grid) = c("nrounds", "eta", "max_depth", "colsample", "subsample")
-colnames(tuneResults4$grid) = c("nrounds", "eta", "max_depth", "colsample", "subsample")
-colnames(tuneResults5$grid) = c("nrounds", "eta", "max_depth", "colsample", "subsample")
 auc1 = as.data.frame(cbind(tuneResults1$grid, numeric(nrow(tuneResults1$grid))))
 for (i in 1:(length(tuneResults1)-1)) auc1[i,6] = tuneResults1[[(i+1)]]$auc
-auc2 = as.data.frame(cbind(tuneResults2$grid, numeric(nrow(tuneResults1$grid))))
+auc2 = as.data.frame(cbind(tuneResults2$grid, numeric(nrow(tuneResults2$grid))))
 for (i in 1:(length(tuneResults2)-1)) auc2[i,6] = tuneResults2[[(i+1)]]$auc
-auc3 = as.data.frame(cbind(tuneResults3$grid, numeric(nrow(tuneResults1$grid))))
+auc3 = as.data.frame(cbind(tuneResults3$grid, numeric(nrow(tuneResults3$grid))))
 for (i in 1:(length(tuneResults3)-1)) auc3[i,6] = tuneResults3[[(i+1)]]$auc
-auc4 = as.data.frame(cbind(tuneResults4$grid, numeric(nrow(tuneResults1$grid))))
+auc4 = as.data.frame(cbind(tuneResults4$grid, numeric(nrow(tuneResults4$grid))))
 for (i in 1:(length(tuneResults4)-1)) auc4[i,6] = tuneResults4[[(i+1)]]$auc
-auc5 = as.data.frame(cbind(tuneResults5$grid, numeric(nrow(tuneResults1$grid))))
+auc5 = as.data.frame(cbind(tuneResults5$grid, numeric(nrow(tuneResults5$grid))))
 for (i in 1:(length(tuneResults5)-1)) auc5[i,6] = tuneResults5[[(i+1)]]$auc
+auc6 = as.data.frame(cbind(tuneResults6$grid, numeric(nrow(tuneResults6$grid))))
+for (i in 1:(length(tuneResults6)-1)) auc6[i,6] = tuneResults5[[(i+1)]]$auc
 
-aucs = rbind(auc1, auc2, auc3, auc4, auc5)
+aucs = rbind(auc1, auc2, auc3, auc4, auc5, auc6)
+colnames(aucs) = c("nrounds", "eta", "max_depth", "colsample", "subsample", "auc")
 aucs = rbind(auc1, auc2, auc4)
 write.csv(aucs, "data/xgboost_tuning.csv")
+
+png("fig/xgb_tuneResults_nrounds_maxDepth.png", width = 800, height = 800)
+plotHeatMap(aucs, aucs$nrounds, aucs$max_depth, "nrounds", "max_depth")
+dev.off()
+
+png("fig/xgb_tuneResults_nrounds_eta.png", width = 800, height = 800)
+plotHeatMap(aucs, aucs$nrounds, aucs$eta, "nrounds", "eta")
+dev.off()
+
+png("fig/xgb_tuneResults_nrounds_colsample.png", width = 800, height = 800)
+plotHeatMap(aucs, aucs$nrounds, aucs$colsample, "nrounds", "colsample")
+dev.off()

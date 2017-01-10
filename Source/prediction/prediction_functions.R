@@ -226,6 +226,27 @@ customXGBoostTune = function(task,train,test,
   return(results)
 }
 
+# helper function to plot a heatmap to visualize the tuning results
+# requires data that has at least an x, a y and an auc column
+# x and y can be either "nrounds", "eta", "max_depth", "colsample" or "subsample"
+# takes the highest value for every combination of x and y
+plotHeatMap = function(data, x, y, xlab, ylab) {
+  combos = expand.grid(unique(x), unique(y))
+  plotData = as.data.frame(cbind(x = combos[,1], y = combos[,2], auc = numeric(nrow(combos))))
+  for (i in nrow(combos)) {
+    plotData[i,3] = max(data$auc[which(x == combos[i,1] & y == combos[i,2])])
+  }
+  p = ggplot(data, aes(x = ordered(x), y = ordered(y), fill = auc)) + geom_tile(color = "white") +
+    xlab(xlab) + ylab(ylab) + 
+    theme_bw() +
+    theme(axis.text = element_text(size = 40, colour = "black"), 
+          axis.title = element_text(size = 40, colour = "black")) +
+    theme(plot.margin = unit(c(1,2,1,1), "cm")) + 
+    theme(legend.text = element_text(size = 40), legend.key.size = unit(2,"cm"), legend.title = element_text(size = 40, face = "bold")) +
+    scale_fill_gradient(limits = c(min(data$auc), max(data$auc)), low = "red", high = "green", guide = "colorbar")
+  return(p)
+}
+
 #check if rows correspond to sample, so that merge with factors etc. is correct:
 #s <- readRDS("data/sample.rds") #1 = 1:50000, 2 = 500001:100000, 3 = 100001:145231 in train set
 #s[c(1:5,50001:50005,100001:100005)] == rownames(data_numeric)[c(1:5,50001:50005,100001:100005)]
