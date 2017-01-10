@@ -4,7 +4,7 @@
 #############################################
 # FILE CONTAINS PLOT GENERATION AND REASONING FOR THE IDENTIFICATION OF NA ENCODINGS
 # REQUIRES CERTAIN OBJECTS BEING INITIALIZED FROM DATACLEANING.R
-source("source/ConvertNAs_Functions.R")
+source("source/DataCleaning/ConvertNAs_Functions.R")
 
 # inspect data to find NA encodings
 initialNAs = getNAsPercentage(trainData)
