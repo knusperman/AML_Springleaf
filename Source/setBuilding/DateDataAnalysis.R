@@ -1,4 +1,4 @@
-source("source/DateFunctions.R")
+source("source/DataCleaning/DateFunctions.R")
 
 dateData = readRDS("data/dateAttributes_cleansed.rds")
 monthData = extractDateData(dateData, "m")
