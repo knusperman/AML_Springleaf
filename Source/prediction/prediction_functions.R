@@ -231,6 +231,7 @@ customXGBoostTune = function(task,train,test,
 # x and y can be either "nrounds", "eta", "max_depth", "colsample" or "subsample"
 # takes the highest value for every combination of x and y
 plotHeatMap = function(data, x, y, xlab, ylab) {
+  require(ggplot2)
   combos = expand.grid(unique(x), unique(y))
   plotData = as.data.frame(cbind(x = combos[,1], y = combos[,2], auc = numeric(nrow(combos))))
   for (i in nrow(combos)) {

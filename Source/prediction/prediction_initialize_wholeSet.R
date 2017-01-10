@@ -63,9 +63,10 @@ mydata <- buildDataSet(c(1,2,3)) # 3 indicates the third data sample part, which
 numericals = as.data.frame(readRDS("data/numericalData_withoutCor1.rds"))
 killedNumerics = readRDS("data/killedNumericsNA.rds")
 numericals = numericals[as.numeric(rownames(mydata)), (colnames(numericals) %in% killedNumerics)]
-
+res
 # median imputation
 for (i in 1:ncol(numericals)) {
+  numericals[,i] = as.numeric(numericals[,i])
   numericals[is.na(numericals[,i]),i] = 0
   numericals[numericals[,i] == 0,i] = 1
   numericals[,i] = as.logical(numericals[,i])
@@ -86,3 +87,5 @@ test.set <- test.set[-which(test.set %in% train.set)]
 params = list(nrounds = 500, eta = 0.015, max_depth = 10, colsample_bytree = 0.6, subsample = 0.8)
 result_whole_boolean = buildXG(classif_task, train.set, test.set, params)
 saveRDS(result_whole_boolean, "data/result_whole_booleanImputation.rds")
+
+# first approach better
