@@ -208,6 +208,27 @@ tuneResults8 = customXGBoostTune(classif_task, train.set,test.set,
                                  nrounds, eta, max_depth, colsample, subsample)
 saveRDS(tuneResults8, "data/tuneResults8.rds")
 
+# combo of 200 nrounds and 11, 12, 13, 14 max_depth still missing
+nrounds = c(200) #MC
+eta = c(0.015, 0.01)
+max_depth = c(11, 12, 13, 14)
+colsample = c(0.6)
+subsample = 0.8
+tuneResults9 = customXGBoostTune(classif_task, train.set,test.set, 
+                                 nrounds, eta, max_depth, colsample, subsample)
+saveRDS(tuneResults9, "data/tuneResults9.rds")
+
+# further increase max_depth for high n_rounds
+nrounds = c(500, 1000) #MC
+eta = c(0.015, 0.01)
+max_depth = c(15, 16)
+colsample = c(0.6)
+subsample = 0.8
+tuneResults10 = customXGBoostTune(classif_task, train.set,test.set, 
+                                  nrounds, eta, max_depth, colsample, subsample)
+saveRDS(tuneResults10, "data/tuneResults10.rds")
+
+
 tuneResults1 = readRDS("data/tuneResults1.rds")
 tuneResults2 = readRDS("data/tuneResults2.rds")
 tuneResults3 = readRDS("data/tuneResults3.rds")
@@ -237,7 +258,7 @@ auc8 = as.data.frame(cbind(tuneResults8$grid, auc = numeric(nrow(tuneResults8$gr
 for (i in 1:(length(tuneResults8)-1)) auc8[i,6] = tuneResults8[[(i+1)]]$auc
 
 aucs = rbind(auc1, auc2, auc3, auc4, auc5, auc6, auc7, auc8)
-aucs = rbind(auc1, auc2, auc3, auc4, auc5, auc7)
+aucs = rbind(auc1, auc2, auc3, auc4, auc5, auc6, auc7)
 colnames(aucs) = c("nrounds", "eta", "max_depth", "colsample", "subsample", "auc")
 write.csv(aucs, "data/xgboost_tuning.csv")
 
@@ -251,6 +272,10 @@ dev.off()
 
 png("fig/xgb_tuneResults_nrounds_colsample.png", width = 800, height = 800)
 plotHeatMap(aucs, aucs$nrounds, aucs$colsample, "nrounds", "colsample")
+dev.off()
+
+png("fig/xgb_tuneResults_max_depth_eta.png", width = 800, height = 800)
+plotHeatMap(aucs, aucs$max_depth, aucs$eta, "max_depth", "eta")
 dev.off()
 
 auc5 = read.csv("data/xgboost_tuning.csv")
