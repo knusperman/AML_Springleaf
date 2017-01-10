@@ -66,3 +66,9 @@ saveRDS(rf_600_40_1, "models/imputed/rf_600_40_1.rds")
 rf_500_40_10 = buildRF(classif_task,train.set,test.set,
                       list(ntree=floor(500/parallel::detectCores()),
                            mtry=40, nodesize=10, importance = TRUE))
+
+# get variable importance via manual random forest (mlr does not return importance, 
+# even if importance is set to true)
+res = randomForest(target ~., data = mydata, ntree = 500, mtry = 40, nodesize = 10, importance = TRUE)
+
+plot(sort(res$importance$MeanDecreaseGini, decreasing = TRUE))
