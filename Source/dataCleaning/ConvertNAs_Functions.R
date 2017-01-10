@@ -45,23 +45,36 @@ inspectValues = function(x) {
     column[9] = sum(is.na(temp))
     temp = na.omit(temp)
     column[1] = length(unique(temp))
-    column[2] = min(temp)
-    column[3] = max(temp)
-    column[4] = median(temp)
-    uniqueTemp = unique(temp)
-    column[5] = mean(uniqueTemp)
+    column[2] = min(na.omit(temp))
+    column[3] = max(na.omit(temp))
+    column[4] = median(na.omit(temp))
+    uniqueTemp = unique(na.omit(temp))
+    column[5] = mean(na.omit(uniqueTemp))
     sortedUniqueTemp = sort(uniqueTemp)
-    column[10] = sortedUniqueTemp[2]
-    column[11] = sortedUniqueTemp[(length(sortedUniqueTemp)-1)]
-    temp = temp[!temp == min(temp)]
-    temp = temp[!temp == max(temp)]
-    column[6] = mean(unique(temp))
-    temp = temp[!temp == min(temp)]
-    temp = temp[!temp == max(temp)]
-    column[7] = mean(unique(temp))
-    temp = temp[!temp == min(temp)]
-    temp = temp[!temp == max(temp)]
-    column[8] = mean(unique(temp))
+    if (length(uniqueTemp) >= 3) {
+      column[10] = sortedUniqueTemp[2]
+      column[11] = sortedUniqueTemp[(length(sortedUniqueTemp)-1)]
+      temp = temp[!temp == min(na.omit(temp))]
+      temp = temp[!temp == max(na.omit(temp))]
+      column[6] = mean(na.omit(unique(temp)))
+      if(length(unique(temp)) >= 3) {
+        temp = temp[!temp == min(na.omit(temp))]
+        temp = temp[!temp == max(na.omit(temp))]
+        column[7] = mean(na.omit(unique(temp)))
+        if(length(unique(temp)) >= 3) {
+          temp = temp[!temp == min(na.omit(temp))]
+          temp = temp[!temp == max(na.omit(temp))]
+          column[8] = mean(na.omit(unique(temp)))
+        }
+        else column[8] = NA
+      }
+      else column[7] = NA
+    }
+    else {
+      column[6] = NA
+      column[10] = NA
+      column[11] = NA
+    }
     result[,i] = column
   }
   return(result)

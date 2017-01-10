@@ -14,7 +14,7 @@ source("source/DataCleaning/ConvertNAs_Functions.R")
 trainData = convertObviousNAs(trainData)
 
 saveRDS(trainData, "data/check1.rds") # backup
-# trainData = readRDS("data/check1.rds")
+# trainData = as.data.frame(readRDS("data/check1.rds"))
 
 # remove ID column
 trainData = trainData[,-1]
@@ -101,12 +101,12 @@ saveRDS(cbind(booleanColumns, dateColumns, stringColumns, numericalColumns),
 # convert datatypes
 # convert to logical in trainData
 for (i in 1:ncol(trainData)) {
-  if (booleanColumns[i] == TRUE) trainData[,i] = as.logical(trainData[,i])
+  if (booleanColumns[i] == TRUE) trainData[,i] = as.logical(as.character(trainData[,i]))
 }
 
 # convert to numeric in trainData
 for (i in 1:ncol(trainData)) {
-  if (numericalColumns[i] == TRUE) trainData[,i] = as.numeric(trainData[,i])
+  if (numericalColumns[i] == TRUE) trainData[,i] = as.numeric(as.character(trainData[,i]))
 }
 
 #############################################
@@ -117,7 +117,7 @@ naEncodings = c(-99999, 1e+09, 99, 9999, 100, 9996, 9998, 98,
 trainData = convertNAsFaster(trainData, naEncodings)
 
 saveRDS(trainData, "data/check2.rds") # backup
-# trainData = readRDS("data/check2.rds")
+# trainData = as.data.frame(readRDS("data/check2.rds"))
 
 # find attributes that only have NA and one value
 oneValueAndNAColumns = findOneValueAndNAs(trainData) 
@@ -293,7 +293,8 @@ numericalData_lowestNA = numericalData_lowestNA[,-removeIndices]
 
 numericalData = numericalData[,-removeIndices]
 saveRDS(numericalData, "data/numericalData_withoutCor1.rds")
-# numericalData = readRDS("data/numericalData_withoutCor1.rds")
+# numericalData = as.data.frame(readRDS("data/numericalData_withoutCor1.rds"))
+# for (i in 1:ncol(numericalData)) numericalData[,i] = as.numeric(numericalData[,i])
 
 numericalData_lowestNA = readRDS("data/numericalData_sampleLowestNA.rds")
 numericalData_lowestNA = numericalData_lowestNA[,-removeIndices]

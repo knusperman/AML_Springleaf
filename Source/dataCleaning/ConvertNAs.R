@@ -16,9 +16,32 @@ sum(initialNAs == 1) # 0
 # sampleTraining = sampleTraining[,-which(initialNAs == 1)]
 
 # now go to more sophisticated NA conversion
-
+numericalData = trainData[,numericalColumns]
 overview = inspectValues(numericalData)
 
+# plot mean of unique values vs. mean of unique values with outliers removed
+ord = order(overview[5,])
+  
+plotData = as.data.frame(cbind(id = rep(seq_along(overview[5,ord]), 2), 
+                               val = c(overview[5,ord], overview[6,ord]),
+                               group = c(rep("Mean unique values", length.out = length(overview[5,ord])),
+                                           rep("Mean w/o outliers", length.out = length(overview[5,ord])))))
+plotData[,1] = as.numeric(plotData[,1])
+plotData[,2] = as.numeric(plotData[,2])
+plotData[,3] = as.factor(unlist(plotData[,3]))
+
+png("fig/mean_unique_value.png", height = 800, width = 1200)
+ggplot(plotData, aes(x = id, y = val)) + geom_line(aes(colour = group), size = 2) +
+  xlab("Attribute") + ylab("Value") + 
+  theme_bw() +
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) + 
+  theme(legend.text = element_text(size = 40), legend.key.size = unit(2,"cm"), 
+        legend.title = element_blank())
+dev.off()
+  
+  
 # check which mean of unique values differs drastically from the mean of unique means minus outliers
 # these outliers are most likely to be different encodings of NA values
 naColumns = which(overview[5,] > (overview[6,]*10))
