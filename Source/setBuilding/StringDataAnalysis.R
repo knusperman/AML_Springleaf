@@ -175,4 +175,4 @@ for (i in 1:ncol(relevantData)) {
   relevantData[,i] = factor(relevantData[,i], levels = unique(relevantData[,i]))
 }
 
-saveRDS(relevantData, "data/stringData_FINAL.rds")
+saveRDS(relevantData, "data/final/stringData_FINAL.rds")

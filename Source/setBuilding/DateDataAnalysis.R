@@ -32,8 +32,9 @@ buildDatePlots(hourData, target, path = "fig/hours/rel", relative = TRUE)
 
 relevantDateData = cbind(yearData[,2], yearData[,16], monthData[,2], monthData[,15], monthData[,16],
                          dayData[,2], dayData[,15], dayData[,16])
-colnames(relevantDataData) = c("VAR_0075_YEAR", "VAR_0217_YEAR", "VAR_0075_MONTH", "VAR_0204_MONTH", 
-                               "VAR_0217_MONTH", "VAR_0075_DAY", "VAR_0204_DAY")
+colnames(relevantDateData) = c("VAR_0075_YEAR", "VAR_0217_YEAR", "VAR_0075_MONTH", "VAR_0204_MONTH", 
+                               "VAR_0217_MONTH", "VAR_0075_DAY", "VAR_0204_DAY", "VAR_0217_DAY")
+relevantDateData[is.na(relevantDateData)] = "NA"
 
 # convert all other attributes into TRUE/FALSE (FALSE if NA)
 # plot the difference regarding target between NAs and non-NAs as reasoning
@@ -62,5 +63,5 @@ for (i in 1:ncol(otherDates)) {
 }
 relevantDateData = cbind(relevantDateData, otherDates)
 relevantDateData = as.data.frame(relevantDateData)
-saveRDS(relevantDateData, "data/dateData_FINAL.rds")
+saveRDS(relevantDateData, "data/final/dateData_FINAL.rds")
 
