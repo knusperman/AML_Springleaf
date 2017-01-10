@@ -3,6 +3,8 @@
 # since the test set has to be cleaned in the same way to ensure consistency, mostly code is repeated here
 testData = as.data.frame(read.csv("data/test.csv", stringsAsFactors = FALSE, strip.white = TRUE))
 
+source("source/ConvertNAs_Functions.R")
+trainData = convertObviousNAs(trainData)
 for (i in 1:ncol(testData)) {
   testData[,i] = gsub(" ", "", testData[,i])
 }
@@ -16,7 +18,7 @@ testData = convertNAsFaster(testData, naEncodings)
 saveRDS(testData,"data/testBackup1.rds")
 collist <- readRDS("data/collist.rds")
 booleanColumns = which(colnames(testData) %in% collist$cols_boolean)
-dateColumns = which(colnames(testData) %in% collist$cols_dates)
+dateColumns = which(colnames(testData) %in% c("VAR_0075","VAR_0217", "VAR_0204",collist$cols_dates))
 stringColumns = which(colnames(testData) %in% collist$cols_strings)
 numericalColumns =which(colnames(testData) %in% collist$cols_numeric)
 factorColumns = which(colnames(testData) %in% collist$cols_factors)
@@ -101,7 +103,10 @@ saveRDS(testDate, "data/final/todoTESTdate.rds")
 ###Gold 1, übernehmen Sie!
 # Achtung, die Daten sind schon auf die relevanten Columns über das Training-Sample reduziert.  
 # STRING DATA
-testString = testString[,-c(3, 14, 16, 4)] #das dürfe nicht mehr nötig sein. 
+testString <-readRDS("data/final/todoTESTstrings.rds")
+testDate <-readRDS("data/final/todoTESTdate.rds")
+
+#testString = testString[,-c(3, 14, 16, 4)] #das dürfe nicht mehr nötig sein. 
 stateFilter1 = readRDS("data/stateFilter1.rds") #die fehlen mir.
 stateFilter2 = readRDS("data/stateFilter2.rds")
 testString[testString[,3] %in% rownames(stateFilter1),3] = "other"
@@ -119,7 +124,10 @@ for (i in 1:ncol(testString)) {
 
 ######################################################
 # DATE DATA
-source("source/DateFunctions.R")
+source("Source/setBuilding/Date_Functions.R")
+for(i in 1:ncol(testDate)){
+  testDate[,i] <- as.character(testDate[,i])
+}
 monthData = extractDateData(testDate, "m")
 dayData = as.data.frame(extractDateData(testDate, "d"))
 for (i in 1:ncol(dayData)) {
@@ -132,8 +140,9 @@ relevantDateData = cbind(yearData[,2], yearData[,16], monthData[,2], monthData[,
                          dayData[,2], dayData[,15], dayData[,16])
 otherDates = testDate[,-c(2, 15, 16)]
 for (i in 1:ncol(otherDates)) {
-  otherDates[is.na(otherDates[,i]),i] = FALSE
-  otherDates[!otherDates[,i] == FALSE,i] = TRUE
+  otherDates[is.na(otherDates[,i]),i] = "0"
+  otherDates[!otherDates[,i] == "0",i] = "1"
+  otherDates[,i] = as.logical(as.numeric(otherDates[,i]))
 }
 relevantDateData = cbind(relevantDateData, otherDates)
 testDate = as.data.frame(relevantDateData)
