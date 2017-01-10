@@ -82,3 +82,7 @@ n = getTaskSize(classif_task) #size of data
 train.set = sample(n, size = n*0.9)
 test.set = 1:n
 test.set <- test.set[-which(test.set %in% train.set)]
+
+params = list(nrounds = 500, eta = 0.015, max_depth = 10, colsample_bytree = 0.6, subsample = 0.8)
+result_whole_boolean = buildXG(classif_task, train.set, test.set, params)
+saveRDS(result_whole_boolean, "data/result_whole_booleanImputation.rds")
