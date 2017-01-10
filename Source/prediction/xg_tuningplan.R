@@ -227,8 +227,10 @@ auc4 = as.data.frame(cbind(tuneResults4$grid, auc = numeric(nrow(tuneResults4$gr
 for (i in 1:(length(tuneResults4)-1)) auc4[i,6] = tuneResults4[[(i+1)]]$auc
 auc5 = as.data.frame(cbind(tuneResults5$grid, auc = numeric(nrow(tuneResults5$grid))))
 for (i in 1:(length(tuneResults5)-1)) auc5[i,6] = tuneResults5[[(i+1)]]$auc
-auc6 = as.data.frame(cbind(tuneResults6$grid, auc = numeric(nrow(tuneResults6$grid))))
-for (i in 1:(length(tuneResults6)-1)) auc6[i,6] = tuneResults6[[(i+1)]]$auc
+# auc6 imported from aws
+# auc6 = as.data.frame(cbind(tuneResults6$grid, auc = numeric(nrow(tuneResults6$grid))))
+# for (i in 1:(length(tuneResults6)-1)) auc6[i,6] = tuneResults6[[(i+1)]]$auc
+auc6 = readRDS("data/auc6.rds")
 auc7 = as.data.frame(cbind(tuneResults7$grid, auc = numeric(nrow(tuneResults7$grid))))
 for (i in 1:(length(tuneResults7)-1)) auc7[i,6] = tuneResults7[[(i+1)]]$auc
 auc8 = as.data.frame(cbind(tuneResults8$grid, auc = numeric(nrow(tuneResults8$grid))))
