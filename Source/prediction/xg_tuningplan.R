@@ -190,12 +190,22 @@ tuneResults6 = customXGBoostTune(classif_task, train.set,test.set,
                                  nrounds, eta, max_depth, colsample, subsample)
 saveRDS(tuneResults6, "data/tuneResults6.rds")
 
+nrounds = c(100, 150, 500, 1000) #MC
+eta = c(0.01, 0.015)
+max_depth = c(13, 14)
+colsample = c(0.5, 0.6, 0.7)
+subsample = 0.8
+tuneResults7 = customXGBoostTune(classif_task, train.set,test.set, 
+                                 nrounds, eta, max_depth, colsample, subsample)
+saveRDS(tuneResults7, "data/tuneResults7.rds")
+
 tuneResults1 = readRDS("data/tuneResults1.rds")
 tuneResults2 = readRDS("data/tuneResults2.rds")
 tuneResults3 = readRDS("data/tuneResults3.rds")
 tuneResults4 = readRDS("data/tuneResults4.rds")
 tuneResults5 = readRDS("data/tuneResults5.rds")
 tuneResults6 = readRDS("data/tuneResults6.rds")
+tuneResults7 = readRDS("data/tuneResults7.rds")
 colnames(tuneResults1$grid) = c("nrounds", "eta", "max_depth", "colsample", "subsample")
 auc1 = as.data.frame(cbind(tuneResults1$grid, numeric(nrow(tuneResults1$grid))))
 for (i in 1:(length(tuneResults1)-1)) auc1[i,6] = tuneResults1[[(i+1)]]$auc
@@ -208,11 +218,12 @@ for (i in 1:(length(tuneResults4)-1)) auc4[i,6] = tuneResults4[[(i+1)]]$auc
 auc5 = as.data.frame(cbind(tuneResults5$grid, numeric(nrow(tuneResults5$grid))))
 for (i in 1:(length(tuneResults5)-1)) auc5[i,6] = tuneResults5[[(i+1)]]$auc
 auc6 = as.data.frame(cbind(tuneResults6$grid, numeric(nrow(tuneResults6$grid))))
-for (i in 1:(length(tuneResults6)-1)) auc6[i,6] = tuneResults5[[(i+1)]]$auc
+for (i in 1:(length(tuneResults6)-1)) auc6[i,6] = tuneResults6[[(i+1)]]$auc
+auc7 = as.data.frame(cbind(tuneResults7$grid, numeric(nrow(tuneResults7$grid))))
+for (i in 1:(length(tuneResults7)-1)) auc7[i,6] = tuneResults7[[(i+1)]]$auc
 
-aucs = rbind(auc1, auc2, auc3, auc4, auc5, auc6)
+aucs = rbind(auc1, auc2, auc3, auc4, auc5, auc6, auc7)
 colnames(aucs) = c("nrounds", "eta", "max_depth", "colsample", "subsample", "auc")
-aucs = rbind(auc1, auc2, auc4)
 write.csv(aucs, "data/xgboost_tuning.csv")
 
 png("fig/xgb_tuneResults_nrounds_maxDepth.png", width = 800, height = 800)
@@ -226,3 +237,7 @@ dev.off()
 png("fig/xgb_tuneResults_nrounds_colsample.png", width = 800, height = 800)
 plotHeatMap(aucs, aucs$nrounds, aucs$colsample, "nrounds", "colsample")
 dev.off()
+
+auc5 = read.csv("data/xgboost_tuning.csv")
+auc5 = auc5[auc5$nrounds == 500,]
+auc5 = auc5[,-1]
