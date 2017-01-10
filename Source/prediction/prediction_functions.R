@@ -235,10 +235,12 @@ plotHeatMap = function(data, x, y, xlab, ylab) {
   require(ggplot2)
   combos = expand.grid(unique(x), unique(y))
   plotData = as.data.frame(cbind(x = combos[,1], y = combos[,2], auc = numeric(nrow(combos))))
-  for (i in nrow(combos)) {
+  for (i in 1:nrow(combos)) {
     plotData[i,3] = max(data$auc[which(x == combos[i,1] & y == combos[i,2])])
+    print(max(data$auc[which(x == combos[i,1] & y == combos[i,2])]))
   }
-  p = ggplot(data, aes(x = ordered(x), y = ordered(y), fill = auc)) + geom_tile(color = "white") +
+  print(plotData)
+  p = ggplot(plotData, aes(x = ordered(x), y = ordered(y), fill = auc)) + geom_tile(color = "white") +
     xlab(xlab) + ylab(ylab) + 
     theme_bw() +
     theme(axis.text = element_text(size = 40, colour = "black"), 
