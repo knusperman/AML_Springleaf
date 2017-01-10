@@ -10,7 +10,7 @@ ncol(trainData) # initially 1934 columns
 # still some white space remains for some reason, entirely remove all whitespace
 trainData = apply(trainData, 2, function(x) {gsub(" ", "", x)})
 
-source("source/ConvertNAs_Functions.R")
+source("source/DataCleaning/ConvertNAs_Functions.R")
 trainData = convertObviousNAs(trainData)
 
 saveRDS(trainData, "data/check1.rds") # backup
@@ -80,7 +80,7 @@ duplicateAttributes = findDuplicateAttributes(trainData[1:10000,]) #none
 nrow(trainData) - nrow(unique(trainData)) #0
 
 # differentiate data types
-source("source/ConvertDatatypes.R")
+source("source/DataCleaning/ConvertDatatypes.R")
 booleanColumns = findBooleans(trainData) 
 sum(booleanColumns) #13
 dateColumns = findDates(trainData)
@@ -280,7 +280,7 @@ indicesNegative = na.omit(indicesNegative)
 
 # 26 perfect negative correlations (includes both sides, so actually 13)
 # eliminate doubles
-source("source/CorrelationHelper.R")
+source("source/DataCleaning/CorrelationHelper.R")
 indices = eliminateDuplicateCorrelationsMoreNAs(indices, numericalData)
 indicesNegative = eliminateDuplicateCorrelationsMoreNAs(indicesNegative, numericalData)
 # some attributes occur multiple times
