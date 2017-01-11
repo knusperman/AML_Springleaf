@@ -1,4 +1,4 @@
-source("source/DateFunctions.R")
+source("source/setBuilding/Date_Functions.R")
 
 dateData = readRDS("data/dateAttributes_cleansed.rds")
 monthData = extractDateData(dateData, "m")
@@ -32,12 +32,14 @@ buildDatePlots(hourData, target, path = "fig/hours/rel", relative = TRUE)
 
 relevantDateData = cbind(yearData[,2], yearData[,16], monthData[,2], monthData[,15], monthData[,16],
                          dayData[,2], dayData[,15], dayData[,16])
-colnames(relevantDataData) = c("VAR_0075_YEAR", "VAR_0217_YEAR", "VAR_0075_MONTH", "VAR_0204_MONTH", 
-                               "VAR_0217_MONTH", "VAR_0075_DAY", "VAR_0204_DAY")
+colnames(relevantDateData) = c("VAR_0075_YEAR", "VAR_0217_YEAR", "VAR_0075_MONTH", "VAR_0204_MONTH", 
+                               "VAR_0217_MONTH", "VAR_0075_DAY", "VAR_0204_DAY", "VAR_0217_DAY")
+relevantDateData[is.na(relevantDateData)] = "NA"
 
 # convert all other attributes into TRUE/FALSE (FALSE if NA)
 # plot the difference regarding target between NAs and non-NAs as reasoning
-otherDates = dateData[,-c(2, 15, 16)]
+otherDates = as.data.frame(dateData[,-c(2, 15, 16)], stringsAsFactors = FALSE)
+
 nonNAtargetPercentage = apply(otherDates, 2, function(x) {
   sum(target[!is.na(x)])/length(target[!is.na(x)])
 })
@@ -60,7 +62,8 @@ for (i in 1:ncol(otherDates)) {
   otherDates[!otherDates[,i] == "0",i] = "1"
   otherDates[,i] = as.logical(as.numeric(otherDates[,i]))
 }
-relevantDateData = cbind(relevantDateData, otherDates)
 relevantDateData = as.data.frame(relevantDateData)
-saveRDS(relevantDateData, "data/dateData_FINAL.rds")
+for (i in 1:ncol(relevantDateData)) relevantDateData[,i] = as.character(relevantDateData[,i])
+relevantDateData = as.data.frame(cbind(relevantDateData, otherDates))
+saveRDS(relevantDateData, "data/final/dateData_FINAL.rds")
 

@@ -31,49 +31,19 @@ library(foreach)
 
 source("Source/prediction/prediction_functions.R")
 
-mydata <- buildDataSet(c(1,2,3)) # 3 indicates the third data sample part, which is used for training (45k records)
-numericals = as.data.frame(readRDS("data/numericalData_withoutCor1.rds"))
-killedNumerics = readRDS("data/killedNumericsNA.rds")
-numericals = numericals[as.numeric(rownames(mydata)), (colnames(numericals) %in% killedNumerics)]
-
-# median imputation
-for (i in 1:ncol(numericals)) {
-  numericals[,i] = as.numeric(numericals[,i])
-  numericals[is.na(numericals[,i]),i] = median(na.omit(numericals[,i]))
-}
-
-mydata = cbind(mydata, numericals)
-remove(numericals)
-
+mydata <- buildDataSet(c(1,2,3)) # 1,2,3 indicates the all three parts of the train set, summing up to 145k records
 ###MLR Setup
 classif_task = makeClassifTask(id = "mtc", data = mydata, target = "target", positive="1")
-
+#####for getting an AUC estimate on part of the TRAIN set as test set (the real TEST set is not labelled)
 set.seed(1234)
 n = getTaskSize(classif_task) #size of data
 train.set = sample(n, size = n*0.9)
 test.set = 1:n
 test.set <- test.set[-which(test.set %in% train.set)]
 
-source("source/prediction/prediction_functions.R")
 params = list(nrounds = 500, eta = 0.015, max_depth = 10, colsample_bytree = 0.6, subsample = 0.8)
 result_whole = buildXG(classif_task, train.set, test.set, params)
-saveRDS(result_whole, "data/result_whole_medianImputation.rds")
-
-mydata <- buildDataSet(c(1,2,3)) # 3 indicates the third data sample part, which is used for training (45k records)
-numericals = as.data.frame(readRDS("data/numericalData_withoutCor1.rds"))
-killedNumerics = readRDS("data/killedNumericsNA.rds")
-numericals = numericals[as.numeric(rownames(mydata)), (colnames(numericals) %in% killedNumerics)]
-res
-# median imputation
-for (i in 1:ncol(numericals)) {
-  numericals[,i] = as.numeric(numericals[,i])
-  numericals[is.na(numericals[,i]),i] = 0
-  numericals[numericals[,i] == 0,i] = 1
-  numericals[,i] = as.logical(numericals[,i])
-}
-
-mydata = cbind(mydata, numericals)
-remove(numericals)
+saveRDS(result_whole, "data/xg_whole.rds")
 
 ###MLR Setup
 classif_task = makeClassifTask(id = "mtc", data = mydata, target = "target", positive="1")

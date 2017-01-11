@@ -2,10 +2,10 @@
 buildDataSet <- function(numericparts){
   data_numeric = buildNumericData(numericparts) #imputed sample for training just in part 3
   
-  data_factors = as.data.frame(readRDS("data/final/factorAttributes_FINAL.rds"))[rownames(data_numeric),] #full train records. no NAs b/c treated as level
-  data_strings = as.data.frame(readRDS("data/final/stringData_FINAL.rds"))[rownames(data_numeric),]
-  data_dates   = as.data.frame(readRDS("data/final/dateData_FINAL.rds"))[rownames(data_numeric),] #f
-  data_boolean = as.data.frame(readRDS("data/final/booleanAttributes_FINAL.rds"))[rownames(data_numeric),]
+  data_factors = as.data.frame(readRDS("data/final/factorAttributes_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),] #full train records. no NAs b/c treated as level
+  data_strings = as.data.frame(readRDS("data/final/stringData_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),]
+  data_dates   = as.data.frame(readRDS("data/final/dateData_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),] #f
+  data_boolean = as.data.frame(readRDS("data/final/booleanAttributes_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),]
   data_target  = as.data.frame(readRDS("data/target.rds"))[rownames(data_numeric),] #f #full train records
   
   mydata <- cbind(data_numeric,data_factors,data_strings,data_dates,data_boolean, data_target)
@@ -14,6 +14,25 @@ buildDataSet <- function(numericparts){
   #cleaning the environment
   remove(data_numeric, data_factors,data_strings,data_dates,data_boolean,data_target)
   mydata
+}
+buildTestDataSet <- function(){
+  train = buildDataSet(c(1,2,3))
+  tdata_numeric = as.data.frame(readRDS("data/final/TESTnumericals_imputed.rds")) #imputed sample for training just in part 3
+  tdata_factors = as.data.frame(readRDS("data/final/TESTfactors.rds"))
+  tdata_strings = as.data.frame(readRDS("data/final/TESTstrings.rds"))
+  tdata_dates   = as.data.frame(readRDS("data/final/TESTdates.rds"))
+  tdata_boolean = as.data.frame(readRDS("data/final/TESTboolean.rds"))
+  cbind(tdata_numeric,tdata_factors,tdata_strings,tdata_dates,tdata_boolean)
+  
+  
+}
+buildCombinedDataSet<-function(){
+  train = buildDataSet(c(1,2,3))
+  trainrows = rownames(train)
+  test = buildTestDataSet()
+  testrows = rownames(test)
+  test$target =sample(c(0,1),size = length(testrows),prob = c(0.5,0.5),replace=TRUE)
+  list(data=rbind(train,test),trainrownames=trainrows,testrownames=testrows )
 }
 
 ############################################################################################################

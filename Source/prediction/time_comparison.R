@@ -24,12 +24,22 @@ plotData = as.data.frame(cbind(sample = rep(c("10k", "45k"), 4),
                                learner = c("Random forest","Random forest", "RPART", "RPART", "XGBoost", "XGBoost", "SVM","SVM")))
 plotData$runtime <-as.numeric(as.character(plotData$runtime))
 
+png("fig/timecomparison_10_40log.png", height=800, width=1200)
+ggplot(data = plotData, aes(x=sample, y=runtime, group = learner)) +
+  geom_path(aes(colour = learner), size = 2) +
+  xlab("Sample size") + ylab("Runtime in seconds") + theme_bw() + 
+  theme(axis.text = element_text(size = 40, colour = "black"), 
+        axis.title = element_text(size = 40, colour = "black")) +
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) + scale_y_log10()+
+  theme(legend.text = element_text(size = 40), legend.key.size = unit(2,"cm"), legend.title = element_text(size = 40, face = "bold"))
+dev.off()
+
 png("fig/timecomparison_10_40.png", height=800, width=1200)
 ggplot(data = plotData, aes(x=sample, y=runtime, group = learner)) +
   geom_path(aes(colour = learner), size = 2) +
   xlab("Sample size") + ylab("Runtime in seconds") + theme_bw() + 
   theme(axis.text = element_text(size = 40, colour = "black"), 
         axis.title = element_text(size = 40, colour = "black")) +
-  theme(plot.margin = unit(c(1,2,1,1), "cm")) + 
+  theme(plot.margin = unit(c(1,2,1,1), "cm")) +
   theme(legend.text = element_text(size = 40), legend.key.size = unit(2,"cm"), legend.title = element_text(size = 40, face = "bold"))
 dev.off()

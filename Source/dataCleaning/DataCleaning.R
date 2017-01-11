@@ -293,7 +293,7 @@ numericalData_lowestNA = numericalData_lowestNA[,-removeIndices]
 
 numericalData = numericalData[,-removeIndices]
 saveRDS(numericalData, "data/numericalData_withoutCor1.rds")
-# numericalData = as.data.frame(readRDS("data/numericalData_withoutCor1.rds"))
+# numericalData = as.data.frame(readRDS("data/numericalData_withoutCor1.rds"), stringsAsFactors = FALSE)
 # for (i in 1:ncol(numericalData)) numericalData[,i] = as.numeric(numericalData[,i])
 
 numericalData_lowestNA = readRDS("data/numericalData_sampleLowestNA.rds")
@@ -318,16 +318,16 @@ length(which(correlationsSpearman == 1))
 factorPotentials_uniqueNumericalValues = 
   readRDS("data/factorPotentials.rds") # result of considerations of DatatypesAnalysis.R
 factorColumns = which(colnames(numericalData) %in% rownames(factorPotentials_uniqueNumericalValues))
-factorData = numericalData[,factorColumns]
+factorData = as.data.frame(numericalData[,factorColumns], stringsAsFactors = FALSE)
 sum(is.na(factorData)) / (ncol(factorData) * nrow(factorData)) # 0.1402106
 sum(is.na(numericalData)) / (ncol(numericalData) * nrow(numericalData)) # 0.2266638
-factorData = apply(factorData, 2, as.numeric) # somehow not all columns are saved as numeric
 # -> much lower NA percentage in factor data
 # encode factor NAs simply as highest factor level + 1
 for (i in 1:ncol(factorData)) {
+  factorData[,i] = as.numeric(factorData[,i])
   maximum = max(na.omit(factorData[,i]))
   factorData[is.na(factorData[,i]),i] = maximum + 1
-  factorData[,i] = factor(factorData[,i], levels = unique(factorData[,i]))
+  factorData[,i] = as.character(factorData[,i])
 }
 sum(is.na(factorData)) / (ncol(factorData) * nrow(factorData)) # 0
 numericalData = numericalData[,-factorColumns]
@@ -335,7 +335,7 @@ numericalData_lowestNA = numericalData_lowestNA[,-factorColumns]
 factorData_lowestNA = numericalData_lowestNA[,factorColumns]
 
 saveRDS(numericalData, "data/numericalAttributes_cleansed_withoutFactors.rds")
-saveRDS(factorData, "data/factorAttributes.rds")
+saveRDS(factorData, "data/final/factorAttributes_FINAL.rds")
 
 # re-do pearson to check if it looks any different
 
