@@ -8,7 +8,7 @@ buildDataSet <- function(numericparts){
   data_boolean = as.data.frame(readRDS("data/final/booleanAttributes_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),]
   data_target  = as.data.frame(readRDS("data/target.rds"))[rownames(data_numeric),] #f #full train records
   
-  mydataold <- cbind(data_numeric,data_factors,data_strings,data_dates,data_boolean, data_target)
+  mydata <- cbind(data_numeric,data_factors,data_strings,data_dates,data_boolean, data_target)
   colnames(mydata)[ncol(mydata)]="target"
   mydata$target <- as.factor(mydata$target)
   #cleaning the environment
@@ -22,20 +22,19 @@ buildTestDataSet <- function(){
   tdata_strings = as.data.frame(readRDS("data/final/TESTstrings.rds"))
   tdata_dates   = as.data.frame(readRDS("data/final/TESTdates.rds"))
   tdata_boolean = as.data.frame(readRDS("data/final/TESTboolean.rds"))
-  mydata <- cbind(tdata_numeric,tdata_factors,tdata_strings,tdata_dates,tdata_boolean)
-  sapply(mydata[,which(colnames(mydata) %in% collist$cols_factors)], levels)
-  for(i in 1:ncol(mydata)){
-    if(colnames(mydata)[i] %in% c(collist$cols_factors, collist$cols_dates,collist$cols_strings)){
-      levels(mydata[,i])
-    }
-  }
-  for (i in 1:ncol(mydata)) {
-    if (!is.factor(mydata[,i])) next
-    if (!length(levels(mydata[,i])) == length(levels(train[,i]))) print(i)
-  }
+  cbind(tdata_numeric,tdata_factors,tdata_strings,tdata_dates,tdata_boolean)
   
   
 }
+buildCombinedDataSet<-function(){
+  train = buildDataSet(c(1,2,3))
+  trainrows = rownames(train)
+  test = buildTestDataSet()
+  testrows = rownames(test)
+  test$target =sample(c(0,1),size = length(testrows),prob = c(0.5,0.5),replace=TRUE)
+  list(data=rbind(train,test),trainrownames=trainrows,testrownames=testrows )
+}
+
 ############################################################################################################
 ###################################### BUILD FUNCTIONS #####################################################
 ############################################################################################################

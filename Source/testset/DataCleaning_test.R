@@ -19,7 +19,7 @@ testData = convertNAsFaster(testData, naEncodings)
 trainData[,moreBooleanColumns] = convert01Booleans(trainData[,moreBooleanColumns])
 
 moreBooleanColumns = apply(trainData, 2, function(x) {length(unique(x))}) == 2 
-
+collist = readRDS("data/collist.rds")
 saveRDS(testData,"data/testBackup1.rds")
 collist <- readRDS("data/collist.rds")
 booleanColumns = which(colnames(testData) %in% collist$cols_boolean)
@@ -42,14 +42,14 @@ testNumerical = testNumerical[,!colnames(testNumerical) %in% killedNumericsNA]
 factorPotentials_uniqueNumericalValues = 
   readRDS("data/factorPotentials.rds") # result of considerations of DatatypesAnalysis.R
 factorColumns = which(colnames(testNumerical) %in% rownames(factorPotentials_uniqueNumericalValues))
-testFactor = as.data.frame(testFactor)
+testFactor = as.data.frame(testFactor,stringsAsFactors = FALSE)
 for (i in 1:ncol(testFactor)) {
   testFactor[,i] = as.numeric(testFactor[,i])
   maximum = max(na.omit(testFactor[,i]))
   testFactor[is.na(testFactor[,i]),i] = maximum + 1
-  testFactor[,i] = factor(testFactor[,i], levels = unique(testFactor[,i]))
+  testFactor[,i] = as.character(  testFactor[,i])
 }
-saveRDS(testFactor, "data/final/TESTfactors.rds")
+saveRDS(testFactor, "data/final/TESTfactors_char.rds")
 testNumerical = as.data.frame(testNumerical[,-factorColumns],stringsAsFactors=FALSE)
 for(i in 1:ncol(testNumerical)){
   testNumerical[,i] =as.numeric(testNumerical[,i])
@@ -181,6 +181,6 @@ for (i in 1:ncol(otherDates)) {
 }
 
 relevantDateData = cbind(as.data.frame(relevantDateData,stringsAsFactors = FALSE), otherDates)
-testDate = as.data.frame(relevantDateData)
+testDate = as.data.frame(relevantDateData,stringsAsFactors=FALSE)
 saveRDS(testDate, "data/final/TESTdates.rds")
 dataset = as.data.frame(cbind(testNumerical_imputed, testFactor, testBoolean, testString, testDate, target = target))

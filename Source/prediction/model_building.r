@@ -20,20 +20,8 @@ xg_tuned <- readRDS("models/imputed/xgboost_tuned.rds") # see xg_tuningplan for 
 # buildRPART(classif_task,train.set,test.set, readRDS("models/imputed/rpart_tunedparams.rds"))
 
 
-## now build model on 145k samples
-mydata_fullsample <- buildDataSet(c(1,2,3)) # 3 indicates the third data sample part, which is used for training (45k records)
-###MLR Setup
-
-classif_task_full = makeClassifTask(id = "mtcfull", data = mydata_fullsample, target = "target", positive="1")
-set.seed(1234)
-n = getTaskSize(classif_task_full) #size of data
-train_set_full = sample(n, size = n*0.9)
-test_set_full = 1:n
-test_set_full <- test_set_full[-which(test_set_full %in% train_set_full)]
-
 #rpart_tuned_full <- buildRPART(classif_task_full,train_set_full,test_set_full,pars =readRDS("models/imputed/rpart_tunedparams.rds"))
 rpart_tuned_full <- readRDS("models/imputed/FULL_rpart_tuned.rds")
-
 # xg_tuned_full <- buildXG(classif_task_full, train_set_full,test_set_full,pars=readRDS("models/imputed/xg_tunedparams.rds"))
 xg_tuned_full <- readRDS( "models/imputed/FULL_xg_tuned.rds")
 
@@ -53,4 +41,23 @@ classif_task_scaled = makeClassifTask(id = "mtc", data = mydata_scaled, target =
 #rfparams$ntree = rfparams$ntree/4 #use all cores (4)
 #rf_scaled =  buildRF(classif_task_scaled,train.set,test.set, rfparams)
 #rpart_scaled =  buildRPART(classif_task_scaled,train.set,test.set, readRDS("models/imputed/rpart_tunedparams.rds"))
+
+
+## now build model on 145k samples and include test data
+
+mydata_fullsample <- buildCombinedDataSet() 
+trainrows <- mydata_fullsample$trainrownames
+testrows <- mydata_fullsample$testrownames
+trainindices <- 1:145231 
+testindices <- 145232:290463 #different to rownames, which are strings, but can also be used to subset. But not for mlR task
+mydata_fullsample <- mydata_fullsample$data
+###MLR Setup
+for(i in which(sapply(mydata_fullsample, class) %in%c("character","logical"))){
+  mydata_fullsample[,i] = as.factor(mydata_fullsample[,i])
+}
+classif_task_full = makeClassifTask(id = "mtcfull", data = mydata_fullsample, target = "target", positive="1")
+set.seed(1234)
+xg_tuned_full <- buildXG(classif_task_full, trainindices, testindices[1:10],pars = list(nrounds=3))
+
+
 
