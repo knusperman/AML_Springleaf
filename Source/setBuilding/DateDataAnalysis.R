@@ -38,7 +38,8 @@ relevantDateData[is.na(relevantDateData)] = "NA"
 
 # convert all other attributes into TRUE/FALSE (FALSE if NA)
 # plot the difference regarding target between NAs and non-NAs as reasoning
-otherDates = dateData[,-c(2, 15, 16)]
+otherDates = as.data.frame(dateData[,-c(2, 15, 16)], stringsAsFactors = FALSE)
+
 nonNAtargetPercentage = apply(otherDates, 2, function(x) {
   sum(target[!is.na(x)])/length(target[!is.na(x)])
 })
@@ -61,7 +62,8 @@ for (i in 1:ncol(otherDates)) {
   otherDates[!otherDates[,i] == "0",i] = "1"
   otherDates[,i] = as.logical(as.numeric(otherDates[,i]))
 }
-relevantDateData = cbind(relevantDateData, otherDates)
 relevantDateData = as.data.frame(relevantDateData)
+for (i in 1:ncol(relevantDateData)) relevantDateData[,i] = as.character(relevantDateData[,i])
+relevantDateData = as.data.frame(cbind(relevantDateData, otherDates))
 saveRDS(relevantDateData, "data/final/dateData_FINAL.rds")
 
