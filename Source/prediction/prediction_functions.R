@@ -59,7 +59,7 @@ buildCombinedDataSet<-function(){
   for(i in which(sapply(mydata_fullsample, class) %in%c("character","logical"))){
     mydata_fullsample[,i] = as.factor(mydata_fullsample[,i])
   }
-  list(mydata_fullsample,trainrownames=trainrows,testrownames=testrows )
+  list(data = mydata_fullsample,trainrownames=trainrows,testrownames=testrows )
 }
 
 ############################################################################################################
