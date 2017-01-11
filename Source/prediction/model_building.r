@@ -14,7 +14,8 @@ saveRDS(rfdefault, "models/imputed/rf_default.rds")
 rpart_tuned <- readRDS("models/imputed/rpart_tuned.rds")
 rf_tuned <- readRDS("models/imputed/rf_500_40_10.rds") # see rf_tuningplan for details
 xg_tuned <- readRDS("models/imputed/xgboost_tuned.rds") # see xg_tuningplan for details
-# or buildRF(classif_task,train.set,test.set, readRDS("models/imputed/rf_tunedparams.rds"))
+# or
+# buildRF(classif_task,train.set,test.set, readRDS("models/imputed/rf_tunedparams.rds"))
 # buildXG(classif_task,train.set,test.set, readRDS("models/imputed/xg_tunedparams.rds"))
 # buildRPART(classif_task,train.set,test.set, readRDS("models/imputed/rpart_tunedparams.rds"))
 

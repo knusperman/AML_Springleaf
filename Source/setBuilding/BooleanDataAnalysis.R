@@ -7,7 +7,6 @@ for (i in nas) {
   booleanData[is.na(booleanData[,i]),i] = "2"
   booleanData[(booleanData[,i] == TRUE),i] = "1"
   booleanData[(booleanData[,i] == FALSE),i] = "0"
-  booleanData[,i] = factor(booleanData[,i], levels = unique(booleanData[,i]))
 }
 
 saveRDS(booleanData, "data/final/booleanAttributes_FINAL.rds")

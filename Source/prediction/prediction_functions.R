@@ -2,20 +2,40 @@
 buildDataSet <- function(numericparts){
   data_numeric = buildNumericData(numericparts) #imputed sample for training just in part 3
   
-  data_factors = as.data.frame(readRDS("data/final/factorAttributes_FINAL.rds"))[rownames(data_numeric),] #full train records. no NAs b/c treated as level
-  data_strings = as.data.frame(readRDS("data/final/stringData_FINAL.rds"))[rownames(data_numeric),]
-  data_dates   = as.data.frame(readRDS("data/final/dateData_FINAL.rds"))[rownames(data_numeric),] #f
-  data_boolean = as.data.frame(readRDS("data/final/booleanAttributes_FINAL.rds"))[rownames(data_numeric),]
+  data_factors = as.data.frame(readRDS("data/final/factorAttributes_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),] #full train records. no NAs b/c treated as level
+  data_strings = as.data.frame(readRDS("data/final/stringData_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),]
+  data_dates   = as.data.frame(readRDS("data/final/dateData_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),] #f
+  data_boolean = as.data.frame(readRDS("data/final/booleanAttributes_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),]
   data_target  = as.data.frame(readRDS("data/target.rds"))[rownames(data_numeric),] #f #full train records
   
-  mydata <- cbind(data_numeric,data_factors,data_strings,data_dates,data_boolean, data_target)
+  mydataold <- cbind(data_numeric,data_factors,data_strings,data_dates,data_boolean, data_target)
   colnames(mydata)[ncol(mydata)]="target"
   mydata$target <- as.factor(mydata$target)
   #cleaning the environment
   remove(data_numeric, data_factors,data_strings,data_dates,data_boolean,data_target)
   mydata
 }
-
+buildTestDataSet <- function(){
+  train = buildDataSet(c(1,2,3))
+  tdata_numeric = as.data.frame(readRDS("data/final/TESTnumericals_imputed.rds")) #imputed sample for training just in part 3
+  tdata_factors = as.data.frame(readRDS("data/final/TESTfactors.rds"))
+  tdata_strings = as.data.frame(readRDS("data/final/TESTstrings.rds"))
+  tdata_dates   = as.data.frame(readRDS("data/final/TESTdates.rds"))
+  tdata_boolean = as.data.frame(readRDS("data/final/TESTboolean.rds"))
+  mydata <- cbind(tdata_numeric,tdata_factors,tdata_strings,tdata_dates,tdata_boolean)
+  sapply(mydata[,which(colnames(mydata) %in% collist$cols_factors)], levels)
+  for(i in 1:ncol(mydata)){
+    if(colnames(mydata)[i] %in% c(collist$cols_factors, collist$cols_dates,collist$cols_strings)){
+      levels(mydata[,i])
+    }
+  }
+  for (i in 1:ncol(mydata)) {
+    if (!is.factor(mydata[,i])) next
+    if (!length(levels(mydata[,i])) == length(levels(train[,i]))) print(i)
+  }
+  
+  
+}
 ############################################################################################################
 ###################################### BUILD FUNCTIONS #####################################################
 ############################################################################################################
