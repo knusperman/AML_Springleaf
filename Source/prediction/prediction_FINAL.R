@@ -35,11 +35,8 @@ mydata_fullsample <- mydata_fullsample$data
 
 classif_task_full = makeClassifTask(id = "mtcfull", data = mydata_fullsample, target = "target", positive="1")
 
-#optimal xg parameters
-xgparam <- list(nrounds =500, eta =0.02,max_depth=14,colsample_bytree=0.6,subsample=0.8)
+#optimal xg paramters
+xgparam <- list(nrounds =1000, eta =0.02,max_depth=14,colsample_bytree=0.6,subsample=0.8)
 set.seed(1234)
 xg_tuned_submission <- buildXG(classif_task_full, trainindices, testindices,pars = xgparam)
-saveRDS(xg_tuned_submission, "finalXGmodel.rds") #save
-readRDS("data/submission.rds")->submission #create submission for kaggle
-submission$target = xg_tuned_submission$predictions$data$prob.1
-write.csv(submission,"submission_filled.csv")
+saveRDS(xg_tuned_submission, "finalXGmodel.rds")
