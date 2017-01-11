@@ -1,5 +1,5 @@
 
-buildDataSet <- function(numericparts,withExtraNumerics=FALSE){
+buildDataSet <- function(numericparts, withExtraNumerics=FALSE, convertToFactor = FALSE){
   data_numeric = buildNumericData(numericparts) #imputed sample for training just in part 3
   
   data_factors = as.data.frame(readRDS("data/final/factorAttributes_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),] #full train records. no NAs b/c treated as level
@@ -22,8 +22,17 @@ buildDataSet <- function(numericparts,withExtraNumerics=FALSE){
     remove(data_extranumerics)
   }
   remove(data_numeric, data_factors,data_strings,data_dates,data_boolean,data_target)
+  
+  if(convertToFactor) {
+    for(i in which(sapply(mydata, class) %in%c("character","logical"))){
+      mydata[,i] = as.factor(mydata[,i])
+    }
+  }
+  
   mydata
 }
+
+
 buildTestDataSet <- function(){
   train = buildDataSet(c(1,2,3))
   tdata_numeric = as.data.frame(readRDS("data/final/TESTnumericals_imputed.rds")) #imputed sample for training just in part 3
@@ -31,8 +40,8 @@ buildTestDataSet <- function(){
   tdata_strings = as.data.frame(readRDS("data/final/TESTstrings.rds"))
   tdata_dates   = as.data.frame(readRDS("data/final/TESTdates.rds"))
   tdata_boolean = as.data.frame(readRDS("data/final/TESTboolean.rds"))
-  cbind(tdata_numeric,tdata_factors,tdata_strings,tdata_dates,tdata_boolean)
-  
+  testData = cbind(tdata_numeric,tdata_factors,tdata_strings,tdata_dates,tdata_boolean)
+  return(testData)
   
 }
 buildCombinedDataSet<-function(){
@@ -41,7 +50,11 @@ buildCombinedDataSet<-function(){
   test = buildTestDataSet()
   testrows = rownames(test)
   test$target =sample(c(0,1),size = length(testrows),prob = c(0.5,0.5),replace=TRUE)
-  list(data=rbind(train,test),trainrownames=trainrows,testrownames=testrows )
+  mydata_fullsample=rbind(train,test)
+  for(i in which(sapply(mydata_fullsample, class) %in%c("character","logical"))){
+    mydata_fullsample[,i] = as.factor(mydata_fullsample[,i])
+  }
+  list(mydata_fullsample,trainrownames=trainrows,testrownames=testrows )
 }
 
 ############################################################################################################

@@ -229,9 +229,9 @@ tuneResults10 = customXGBoostTune(classif_task, train.set,test.set,
 saveRDS(tuneResults10, "data/tuneResults10.rds")
 
 # apparently higher etas are good
-# increase eta for nrounds = 1000 even further
-nrounds = c(1000) #MC
-eta = c(0.025)
+# increase eta for nrounds = 200 and nrounds = 500
+nrounds = c(200, 500) #MC
+eta = c(0.02)
 max_depth = c(15, 16)
 colsample = c(0.6)
 subsample = 0.8
@@ -240,10 +240,10 @@ tuneResults11 = customXGBoostTune(classif_task, train.set,test.set,
 saveRDS(tuneResults11, "data/tuneResults11.rds")
 
 # apparently higher etas are good
-# increase eta for nrounds = 200 and nrounds = 500
-nrounds = c(200, 500) #MC
-eta = c(0.02)
-max_depth = c(15, 16)
+# increase eta for nrounds = 1000 even further
+nrounds = c(1000) #MC
+eta = c(0.025)
+max_depth = c(16)
 colsample = c(0.6)
 subsample = 0.8
 tuneResults12 = customXGBoostTune(classif_task, train.set,test.set, 
@@ -252,7 +252,7 @@ saveRDS(tuneResults12, "data/tuneResults12.rds")
 
 # apparently higher etas are good
 # increase eta for nrounds = 2000 even further
-nrounds = c(1000) #MC
+nrounds = c(2000) #MC
 eta = c(0.02)
 max_depth = c(15, 16)
 colsample = c(0.6)
@@ -271,6 +271,9 @@ tuneResults7 = readRDS("data/tuneResults7.rds")
 tuneResults8 = readRDS("data/tuneResults8.rds")
 tuneResults9 = readRDS("data/tuneResults9.rds")
 tuneResults10 = readRDS("data/tuneResults10.rds")
+tuneResults11 = readRDS("data/tuneResults11.rds")
+tuneResults12 = readRDS("data/tuneResults12.rds")
+tuneResults13 = readRDS("data/tuneResults13.rds")
 auc1 = as.data.frame(cbind(tuneResults1$grid, auc = numeric(nrow(tuneResults1$grid))))
 for (i in 1:(length(tuneResults1)-1)) auc1[i,6] = tuneResults1[[(i+1)]]$auc
 auc2 = as.data.frame(cbind(tuneResults2$grid, auc = numeric(nrow(tuneResults2$grid))))
@@ -303,8 +306,14 @@ auc9 = as.data.frame(cbind(tuneResults9$grid, auc = numeric(nrow(tuneResults9$gr
 for (i in 1:(length(tuneResults9)-1)) auc9[i,6] = tuneResults9[[(i+1)]]$auc
 auc10 = as.data.frame(cbind(tuneResults10$grid, auc = numeric(nrow(tuneResults10$grid))))
 for (i in 1:(length(tuneResults10)-1)) auc10[i,6] = tuneResults10[[(i+1)]]$auc
+auc11 = as.data.frame(cbind(tuneResults11$grid, auc = numeric(nrow(tuneResults11$grid))))
+for (i in 1:(length(tuneResults11)-1)) auc11[i,6] = tuneResults11[[(i+1)]]$auc
+auc12 = as.data.frame(cbind(tuneResults12$grid, auc = numeric(nrow(tuneResults12$grid))))
+for (i in 1:(length(tuneResults12)-1)) auc12[i,6] = tuneResults12[[(i+1)]]$auc
+auc13 = as.data.frame(cbind(tuneResults13$grid, auc = numeric(nrow(tuneResults13$grid))))
+for (i in 1:(length(tuneResults13)-1)) auc13[i,6] = tuneResults13[[(i+1)]]$auc
 
-aucs = rbind(auc1, auc2, auc3, auc4, auc5, auc6, auc7, auc8, auc9, auc10)
+aucs = rbind(auc1, auc2, auc3, auc4, auc5, auc6, auc7, auc8, auc9, auc10, auc11, auc12, auc13)
 colnames(aucs) = c("nrounds", "eta", "max_depth", "colsample", "subsample", "auc")
 write.csv(aucs, "data/xgboost_tuning_final.csv")
 
