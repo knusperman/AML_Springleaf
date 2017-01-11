@@ -11,10 +11,12 @@ train.set = sample(n, size = n*0.9)
 test.set = 1:n
 test.set <- test.set[-which(test.set %in% train.set)]
 
-nrounds = 1000 #MC
+nrounds = 1000 
 eta = 0.02
 max_depth = 14
 colsample = 0.6
 subsample = 0.8
-params = list(nrounds = nrdouns, eta = eta, max_depth = max_depth, colsample_bytree = colsample, subsample = subsample)
-tuneResults11 = buildXG(classif_task, train.set,test.set, params)
+params = list(nrounds = nrounds, eta = eta, max_depth = max_depth, colsample_bytree = colsample, subsample = subsample)
+tuneResults11 = buildXG(classif_task_full, train.set,test.set, params)
+
+saveRDS(tuneResults11, "data/finalResults.rds")
