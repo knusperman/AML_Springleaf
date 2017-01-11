@@ -51,7 +51,7 @@ testrows <- mydata_fullsample$testrownames
 trainindices <- 1:145231 
 testindices <- 145232:290463 #different to rownames, which are strings, but can also be used to subset. But not for mlR task
 mydata_fullsample <- mydata_fullsample$data
-###MLR Setup
+###we do this here to ensure right factor levels before task is created
 for(i in which(sapply(mydata_fullsample, class) %in%c("character","logical"))){
   mydata_fullsample[,i] = as.factor(mydata_fullsample[,i])
 }
