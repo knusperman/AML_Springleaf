@@ -114,7 +114,7 @@ result = cbind(VarianceResponse = result, UniqueValues = uniqueValues, naPercent
 # how to process the data:
 # remove cities (3), job descriptions (14, 16) (-> overfitting)
 # remove 4 because of 99.99% NAs
-# remove 
+# remove 14, 16, 4 due to overfitting
 # handle the rest as factors
 # bundle states manually (the lower tail) because randomForest can only handle up to 53 factor levels
 relevantData = stringData[,-c(3, 14, 16, 4)]
@@ -169,10 +169,6 @@ relevantData[,4] = stateData2
 for (i in 1:ncol(relevantData)) {
   relevantData[,i] = as.character(relevantData[,i])
   relevantData[is.na(relevantData[,i]),i] = "na"
-}
-# factorize
-for (i in 1:ncol(relevantData)) {
-  relevantData[,i] = factor(relevantData[,i], levels = unique(relevantData[,i]))
 }
 
 saveRDS(relevantData, "data/final/stringData_FINAL.rds")
