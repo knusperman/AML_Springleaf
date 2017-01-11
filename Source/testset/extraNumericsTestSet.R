@@ -18,5 +18,5 @@ for(i in 1:ncol(testData)){
 for (i in 1:ncol(testData)) {
   testData[is.na(testData[,i]),i] = median(na.omit(testData[,i]))
 }
-saveRDS(testData,"data/TESTmedianImputedExtraNumerics_FINAL.rds")
+saveRDS(testData,"data/final/TESTmedianImputedExtraNumerics_FINAL.rds")
 
