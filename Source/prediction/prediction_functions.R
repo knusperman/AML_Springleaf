@@ -1,17 +1,26 @@
 
-buildDataSet <- function(numericparts){
+buildDataSet <- function(numericparts,withExtraNumerics=FALSE){
   data_numeric = buildNumericData(numericparts) #imputed sample for training just in part 3
   
   data_factors = as.data.frame(readRDS("data/final/factorAttributes_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),] #full train records. no NAs b/c treated as level
   data_strings = as.data.frame(readRDS("data/final/stringData_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),]
   data_dates   = as.data.frame(readRDS("data/final/dateData_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),] #f
   data_boolean = as.data.frame(readRDS("data/final/booleanAttributes_FINAL.rds"),stringsAsFactors=FALSE)[rownames(data_numeric),]
+  if(withExtraNumerics){
+    data_extranumerics = as.data.frame(readRDS("data/final/medianImputedExtraNumerics_FINAL.rds"), stringsAsFactors=FALSE)[rownames(data_numeric),]
+  }
   data_target  = as.data.frame(readRDS("data/target.rds"))[rownames(data_numeric),] #f #full train records
-  
-  mydata <- cbind(data_numeric,data_factors,data_strings,data_dates,data_boolean, data_target)
+  if(withExtraNumerics){
+    mydata <- cbind(data_numeric,data_factors,data_strings,data_dates,data_boolean, data_extranumerics, data_target)
+  }else{
+    mydata <- cbind(data_numeric,data_factors,data_strings,data_dates,data_boolean, data_target)
+  }
   colnames(mydata)[ncol(mydata)]="target"
   mydata$target <- as.factor(mydata$target)
   #cleaning the environment
+  if(withExtraNumerics){
+    remove(data_extranumerics)
+  }
   remove(data_numeric, data_factors,data_strings,data_dates,data_boolean,data_target)
   mydata
 }
