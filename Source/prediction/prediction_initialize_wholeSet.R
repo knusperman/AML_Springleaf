@@ -31,7 +31,7 @@ library(foreach)
 
 source("Source/prediction/prediction_functions.R")
 
-mydata <- buildDataSet(c(1,2,3)) # 1,2,3 indicates the all three parts of the train set, summing up to 145k records
+mydata <- buildDataSet(c(1,2,3),withExtraNumerics = TRUE,convertToFactor = TRUE) # 1,2,3 indicates the all three parts of the train set, summing up to 145k records
 ###MLR Setup
 classif_task = makeClassifTask(id = "mtc", data = mydata, target = "target", positive="1")
 #####for getting an AUC estimate on part of the TRAIN set as test set (the real TEST set is not labelled)

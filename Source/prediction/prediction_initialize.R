@@ -31,7 +31,7 @@ library(foreach)
 
 source("Source/prediction/prediction_functions.R")
 
-mydata <- buildDataSet(c(3)) # 3 indicates the third data sample part, which is used for training (45k records)
+mydata <- buildDataSet(c(3),withExtraNumerics = TRUE,convertToFactor = TRUE) # 3 indicates the third data sample part, which is used for training (45k records)
 
 ###MLR Setup
 classif_task = makeClassifTask(id = "mtc", data = mydata, target = "target", positive="1")

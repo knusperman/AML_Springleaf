@@ -9,7 +9,7 @@ library(randomForest)
 library(foreach)
 
 source("Source/prediction/prediction_functions.R")
-
+sampledata = buildDataSet(c(1,2,3), TRUE, TRUE)
 mydata_fullsample <- buildCombinedDataSet() 
 trainrows <- mydata_fullsample$trainrownames
 testrows <- mydata_fullsample$testrownames
@@ -28,7 +28,7 @@ for(i in which(sapply(mydata_fullsample, class) %in%c("character","logical"))){
 classif_task_full = makeClassifTask(id = "mtcfull", data = mydata_fullsample, target = "target", positive="1")
 
 #optimal xg paramters
-xgparam <- list(nrounds =1, eta =0.02,max_depth=14,colsample=0.6,subsample=0.8)
+xgparam <- list(nrounds =1000, eta =0.02,max_depth=14,colsample_bytree=0.6,subsample=0.8)
 set.seed(1234)
 xg_tuned_submission <- buildXG(classif_task_full, trainindices, testindices,pars = xgparam)
 

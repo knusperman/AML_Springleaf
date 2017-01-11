@@ -1,4 +1,4 @@
-rf10k = buildRF(classif_task,train.set,test.set,pars = list(ntree=125)) # =500
+rf10k = buildRF(classif_task,train.set,test.set,pars = list(ntree=125)) # =500 @4cores
 saveRDS(rf10k, "rf10k.rds")
 
 rpart10k = buildRPART(classif_task,train.set,test.set, pars = list(minbucket =30,minsplit=15,cp=0.0015 ))
@@ -7,8 +7,8 @@ saveRDS(rpart10k, "rpart10k.rds")
 xg10k = buildXG(classif_task,train.set,test.set,pars = list(nrounds=100,max_depth=7))
 saveRDS(xg10k, "xg10k.rds")
 
-
-rf45k <- readRDS("models/imputed/rf_default.rds")
+# fit and save as RDS in model_building.R
+rf45k <- readRDS("models/imputed/rf_default.rds") 
 rpart45k <- readRDS("models/imputed/rpart_tuned.rds")
 xg45k <- buildXG(classif_task, train.set,test.set, pars=list(nrounds=100,max_depth=7))
 
