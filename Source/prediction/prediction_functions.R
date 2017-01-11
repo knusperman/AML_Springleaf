@@ -258,7 +258,6 @@ plotHeatMap = function(data, x, y, xlab, ylab) {
     plotData[i,3] = max(data$auc[which(x == combos[i,1] & y == combos[i,2])])
     print(max(data$auc[which(x == combos[i,1] & y == combos[i,2])]))
   }
-  print(plotData)
   p = ggplot(plotData, aes(x = ordered(x), y = ordered(y), fill = auc)) + geom_tile(color = "white") +
     xlab(xlab) + ylab(ylab) + 
     theme_bw() +
