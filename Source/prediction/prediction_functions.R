@@ -33,21 +33,26 @@ buildDataSet <- function(numericparts, withExtraNumerics=FALSE, convertToFactor 
 }
 
 
-buildTestDataSet <- function(){
+buildTestDataSet <- function(withExtraNumerics=FALSE){
   train = buildDataSet(c(1,2,3))
   tdata_numeric = as.data.frame(readRDS("data/final/TESTnumericals_imputed.rds")) #imputed sample for training just in part 3
   tdata_factors = as.data.frame(readRDS("data/final/TESTfactors.rds"))
   tdata_strings = as.data.frame(readRDS("data/final/TESTstrings.rds"))
   tdata_dates   = as.data.frame(readRDS("data/final/TESTdates.rds"))
   tdata_boolean = as.data.frame(readRDS("data/final/TESTboolean.rds"))
-  testData = cbind(tdata_numeric,tdata_factors,tdata_strings,tdata_dates,tdata_boolean)
+  if(withExtraNumerics){
+    tdata_extranumerics = as.data.frame(readRDS("data/final/TESTmedianImputedExtraNumerics_FINAL.rds"))
+    testData = cbind(tdata_numeric,tdata_factors,tdata_strings,tdata_dates,tdata_boolean,tdata_extranumerics)
+  }else{
+    testData = cbind(tdata_numeric,tdata_factors,tdata_strings,tdata_dates,tdata_boolean)
+  }
   return(testData)
   
 }
 buildCombinedDataSet<-function(){
-  train = buildDataSet(c(1,2,3))
+  train = buildDataSet(c(1,2,3),withExtraNumerics = TRUE)
   trainrows = rownames(train)
-  test = buildTestDataSet()
+  test = buildTestDataSet(withExtraNumerics = TRUE)
   testrows = rownames(test)
   test$target =sample(c(0,1),size = length(testrows),prob = c(0.5,0.5),replace=TRUE)
   mydata_fullsample=rbind(train,test)

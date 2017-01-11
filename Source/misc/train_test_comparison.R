@@ -1,13 +1,14 @@
 #only for numeric attributes. factor NAs are treated as a level-->no NAs. 
 library(ggplot2)
-test <- read.csv("/Users/markusheuchert/AML/springleaf_test.csv") 
-train <- readRDS("data/numericalAttributes_cleansed_withoutFactors.rds")
+test <- read.csv("test.csv") 
+train <- readRDS("train.csv")
+collist <- readRDS("data/collist.rds")
 
 test <- as.data.frame(test)
 train <- as.data.frame(train)
 
-test <- test[, which(colnames(test) %in% colnames(train))] #just select relevant columns
-
+test <- test[, which(colnames(test) %in% c(collist$cols_numeric,collist$cols_extranumerics))] #just select relevant columns
+train <- train[, which(colnames(train) %in% c(collist$cols_numeric,collist$cols_extranumerics))]
 NAratio_test <- as.data.frame(round(sapply(test, function(x) sum(is.na(x)))/nrow(test),2))
 NAratio_train <- as.data.frame(round(sapply(train, function(x) sum(is.na(x)))/nrow(train),2))
 

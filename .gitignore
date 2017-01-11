@@ -7,3 +7,5 @@ df_imputed1001-1199.rds
 df_imputed800-1000.rds
 df_imputed1200-end.rds
 df_imputed500-799.rds
+.RDataTmp
+/data/final/

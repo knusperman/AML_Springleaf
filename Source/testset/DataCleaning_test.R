@@ -4,7 +4,7 @@
 testData = as.data.frame(read.csv("data/test.csv", stringsAsFactors = FALSE, strip.white = TRUE))
 
 source("source/dataCleaning/ConvertNAs_Functions.R")
-trainData = convertObviousNAs(trainData)
+testData = convertObviousNAs(testData)
 for (i in 1:ncol(testData)) {
   testData[,i] = gsub(" ", "", testData[,i])
 }
@@ -13,7 +13,6 @@ removeOneFactor = readRDS("data/REMOVE_oneFactor.rds")
 testData = testData[,-removeOneFactor]
 naEncodings = c(-99999, 1e+09, 99, 9999, 100, 9996, 9998, 98, 
                 999999999, 999999998, 999999997, 999999996, 999999995, 999999994)
-source("source/dataCleaning/ConvertNAs_Functions.R")
 testData = convertNAsFaster(testData, naEncodings)
 
 trainData[,moreBooleanColumns] = convert01Booleans(trainData[,moreBooleanColumns])
